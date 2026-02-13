@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { isAuthenticated } from '$lib/stores/auth';
-	import { getAnalysisHistory } from '$lib/services/analysis';
-	import { formatDate, formatFileSize, getConfidenceColor } from '$lib/utils';
+	import { getAnalysisHistory, deleteHistoryItem } from '$lib/services/analysis';
+	import { getConfidenceColor } from '$lib/utils';
+	import { formatTimeForUser, getEffectiveUserTimezone, formatRelativeTime } from '$lib/utils/timezone';
 	import { onMount } from 'svelte';
-	import { FileImage, TrendingUp, Activity, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { FileImage, TrendingUp, Activity, ChevronLeft, ChevronRight, X, Download, Trash2 } from 'lucide-svelte';
 
 	let analyses: any[] = [];
 	let isLoading = true;
@@ -12,13 +13,21 @@
 	let pageSize = 10;
 	let totalItems = 0;
 	let totalPages = 0;
+	let selectedImage: string | null = null;
+	let selectedGradcam: string | null = null;
+	let showImageModal = false;
+	let showGradcamModal = false;
 
+	// Redirect if not authenticated
+	$: if (!$isAuthenticated) {
+		goto('/login');
+	}
+
+	// Load history on mount
 	onMount(async () => {
-		if (!$isAuthenticated) {
-			goto('/login');
-			return;
+		if ($isAuthenticated) {
+			await loadHistory();
 		}
-		await loadHistory();
 	});
 
 	async function loadHistory() {
@@ -58,6 +67,41 @@
 				return 'text-red-600';
 			default:
 				return 'text-gray-600';
+		}
+	}
+
+	function openImageModal(imageBase64: string) {
+		selectedImage = imageBase64;
+		showImageModal = true;
+	}
+
+	function openGradcamModal(gradcamBase64: string) {
+		selectedGradcam = gradcamBase64;
+		showGradcamModal = true;
+	}
+
+	function closeModals() {
+		showImageModal = false;
+		showGradcamModal = false;
+		selectedImage = null;
+		selectedGradcam = null;
+	}
+
+	function downloadImage(base64Data: string, filename: string) {
+		const link = document.createElement('a');
+		link.href = `data:image/png;base64,${base64Data}`;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
+
+	async function handleDelete(historyId: number) {
+		if (confirm('Are you sure you want to delete this analysis?')) {
+			const success = await deleteHistoryItem(historyId);
+			if (success) {
+				await loadHistory(); // Reload the history
+			}
 		}
 	}
 </script>
@@ -159,12 +203,15 @@
 										<FileImage class="w-6 h-6 text-gray-600" />
 									</div>
 									<div>
-										<h4 class="font-medium text-gray-900">{analysis.filename}</h4>
-										<div class="flex items-center space-x-4 mt-1">
+										<h4 class="font-medium text-gray-900">{analysis.name}</h4>
+										<p class="text-sm text-gray-600 mt-1">{analysis.filename}</p>
+										<div class="flex items-center space-x-4 mt-2">
 											<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 												{analysis.analysis_type.toUpperCase()}
 											</span>
-											<span class="text-sm text-gray-600">{formatDate(analysis.timestamp)}</span>
+											<span class="text-sm text-gray-600" title={formatTimeForUser(analysis.timestamp).date_display}>
+												{formatRelativeTime(analysis.timestamp)}
+											</span>
 										</div>
 									</div>
 								</div>
@@ -177,6 +224,37 @@
 										{analysis.results.authenticity.is_authentic ? 'Authentic' : 'Suspicious'}
 									</span>
 								</div>
+							</div>
+
+							<!-- Action Buttons -->
+							<div class="flex items-center space-x-2">
+								{#if analysis.image_base64}
+									<button
+										on:click={() => openImageModal(analysis.image_base64)}
+										class="btn btn-secondary btn-sm flex items-center"
+										title="View original image"
+									>
+										<FileImage class="w-4 h-4 mr-1" />
+										View Image
+									</button>
+								{/if}
+								{#if analysis.results.gradcam}
+									<button
+										on:click={() => openGradcamModal(analysis.results.gradcam)}
+										class="btn btn-secondary btn-sm"
+										title="View GradCAM visualization"
+									>
+										<Activity class="w-4 h-4 mr-1" />
+										View GradCAM
+									</button>
+								{/if}
+								<button
+									on:click={() => handleDelete(analysis.id)}
+									class="btn btn-secondary btn-sm text-red-600 hover:bg-red-50"
+									title="Delete analysis"
+								>
+									<Trash2 class="w-4 h-4" />
+								</button>
 							</div>
 
 							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -276,3 +354,69 @@
 		</div>
 	</div>
 </div>
+
+<!-- Image Modal -->
+{#if showImageModal && selectedImage}
+	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" on:click={closeModals}>
+		<div class="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto" on:click|stopPropagation>
+			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+				<h3 class="text-lg font-semibold text-gray-900">Original Image</h3>
+				<div class="flex items-center space-x-2">
+					<button
+						on:click={() => downloadImage(selectedImage, 'original-image.png')}
+						class="btn btn-secondary btn-sm flex items-center"
+					>
+						<Download class="w-4 h-4 mr-1" />
+						Download
+					</button>
+					<button
+						on:click={closeModals}
+						class="p-2 text-gray-500 hover:text-gray-700"
+					>
+						<X class="w-5 h-5" />
+					</button>
+				</div>
+			</div>
+			<div class="p-4">
+				<img
+					src={`data:image/png;base64,${selectedImage}`}
+					alt="Original analysis image"
+					class="w-full h-auto"
+				/>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- GradCAM Modal -->
+{#if showGradcamModal && selectedGradcam}
+	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" on:click={closeModals}>
+		<div class="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto" on:click|stopPropagation>
+			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+				<h3 class="text-lg font-semibold text-gray-900">GradCAM Visualization</h3>
+				<div class="flex items-center space-x-2">
+					<button
+						on:click={() => downloadImage(selectedGradcam, 'gradcam-visualization.png')}
+						class="btn btn-secondary btn-sm flex items-center"
+					>
+						<Download class="w-4 h-4 mr-1" />
+						Download
+					</button>
+					<button
+						on:click={closeModals}
+						class="p-2 text-gray-500 hover:text-gray-700"
+					>
+						<X class="w-5 h-5" />
+					</button>
+				</div>
+			</div>
+			<div class="p-4">
+				<img
+					src={`data:image/png;base64,${selectedGradcam}`}
+					alt="GradCAM visualization"
+					class="w-full h-auto"
+				/>
+			</div>
+		</div>
+	</div>
+{/if}

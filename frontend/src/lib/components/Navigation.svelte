@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { isAuthenticated, user } from '$lib/stores/auth';
 	import { logout } from '$lib/services/auth';
-	import { ChevronDown, User, LogOut, Settings, Activity } from 'lucide-svelte';
+	import { ChevronDown, User, LogOut, Activity } from 'lucide-svelte';
 
 	let showMobileMenu = false;
 	let showUserMenu = false;
@@ -93,14 +93,6 @@
 									>
 										<User class="w-4 h-4" />
 										<span>Profile</span>
-									</a>
-									<a
-										href="/settings"
-										class="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-										on:click={closeMenus}
-									>
-										<Settings class="w-4 h-4" />
-										<span>Settings</span>
 									</a>
 									<hr class="my-1" />
 									<button

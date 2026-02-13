@@ -4,7 +4,6 @@
 	import { analyzeXRay, analyzeCTScan } from '$lib/services/analysis';
 	import { addToast } from '$lib/stores/toast';
 	import { formatFileSize } from '$lib/utils';
-	import { onMount } from 'svelte';
 	import { Upload, X, Loader2, Image, Brain, Activity } from 'lucide-svelte';
 
 	let selectedFile: File | null = null;
@@ -12,17 +11,21 @@
 	let isAnalyzing = false;
 	let analysisResult: any = null;
 	let dragOver = false;
+	let analysisName: string = '';
 
-	onMount(() => {
-		if (!$isAuthenticated) {
-			goto('/login');
-		}
-	});
+	// Redirect if not authenticated
+	$: if (!$isAuthenticated) {
+		goto('/login');
+	}
 
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files[0]) {
 			selectedFile = target.files[0];
+			// Set default name to filename without extension
+			const filename = selectedFile.name;
+			const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
+			analysisName = nameWithoutExt;
 		}
 	}
 
@@ -32,6 +35,10 @@
 		
 		if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
 			selectedFile = event.dataTransfer.files[0];
+			// Set default name to filename without extension
+			const filename = selectedFile.name;
+			const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
+			analysisName = nameWithoutExt;
 		}
 	}
 
@@ -48,19 +55,20 @@
 	function clearFile() {
 		selectedFile = null;
 		analysisResult = null;
+		analysisName = '';
 	}
 
 	async function startAnalysis() {
-		if (!selectedFile) return;
+		if (!selectedFile || !analysisName.trim()) return;
 
 		isAnalyzing = true;
 		analysisResult = null;
 
 		try {
 			if (analysisType === 'xray') {
-				analysisResult = await analyzeXRay(selectedFile);
+				analysisResult = await analyzeXRay(selectedFile, analysisName.trim());
 			} else {
-				analysisResult = await analyzeCTScan(selectedFile);
+				analysisResult = await analyzeCTScan(selectedFile, analysisName.trim());
 			}
 		} finally {
 			isAnalyzing = false;
@@ -154,7 +162,7 @@
 							class="hidden"
 						/>
 					</label>
-					<p class="text-sm text-gray-500 mt-4">Supports JPG, PNG, DICOM formats</p>
+					<p class="text-sm text-gray-500 mt-4">Supports JPG, PNG formats</p>
 				</div>
 			{:else}
 				<div class="border border-gray-200 rounded-lg p-4">
@@ -185,9 +193,24 @@
 						/>
 					</div>
 
+					<!-- Name Input -->
+					<div class="mb-4">
+						<label for="analysis-name" class="block text-sm font-medium text-gray-700 mb-2">
+							Analysis Name
+						</label>
+						<input
+							id="analysis-name"
+							type="text"
+							bind:value={analysisName}
+							placeholder="Enter a name for this analysis"
+							class="input w-full"
+							required
+						/>
+					</div>
+
 					<button
 						on:click={startAnalysis}
-						disabled={isAnalyzing}
+						disabled={isAnalyzing || !analysisName.trim()}
 						class="btn btn-primary w-full"
 					>
 						{#if isAnalyzing}

@@ -4,7 +4,6 @@ export interface User {
 	email: string;
 	is_admin: boolean;
 	created_at: string;
-	last_login?: string;
 }
 
 export interface AuthResponse {
@@ -56,6 +55,8 @@ export interface AnalysisHistory {
 	id: number;
 	analysis_type: string;
 	filename: string;
+	name: string;
+	image_base64?: string;
 	results: AnalysisResponse;
 	timestamp: string;
 	confidence?: number;

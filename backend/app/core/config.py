@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     max_file_size: int = Field(default=10485760, description="Max file size in bytes (10MB)")
     upload_dir: str = Field(default="uploads", description="Upload directory")
     allowed_extensions: List[str] = Field(
-        default=["jpg", "jpeg", "png", "dicom", "dcm"],
+        default=["jpg", "jpeg", "png"],
         description="Allowed file extensions"
     )
     

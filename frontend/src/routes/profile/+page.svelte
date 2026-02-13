@@ -3,8 +3,7 @@
 	import { user, isAuthenticated } from '$lib/stores/auth';
 	import { changePassword } from '$lib/services/auth';
 	import { addToast } from '$lib/stores/toast';
-	import { formatDate } from '$lib/utils';
-	import { onMount } from 'svelte';
+	import { formatTimeForUser, formatRelativeTime } from '$lib/utils/timezone';
 	import { User, Mail, Calendar, Shield, Eye, EyeOff, Loader2 } from 'lucide-svelte';
 
 	let currentPassword = '';
@@ -15,11 +14,10 @@
 	let showNewPassword = false;
 	let showConfirmPassword = false;
 
-	onMount(() => {
-		if (!$isAuthenticated) {
-			goto('/login');
-		}
-	});
+	// Redirect if not authenticated
+	$: if (!$isAuthenticated) {
+		goto('/login');
+	}
 
 	async function handlePasswordChange() {
 		if (!currentPassword || !newPassword || !confirmPassword) {
@@ -82,8 +80,8 @@
 						<div class="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
 							<User class="w-10 h-10 text-primary-600" />
 						</div>
-						<h2 class="text-xl font-semibold text-gray-900">{$user?.account_name}</h2>
-						<p class="text-gray-600">{$user?.email}</p>
+						<h2 class="text-xl font-semibold text-gray-900 break-words">{$user?.account_name}</h2>
+						<p class="text-gray-600 break-words">{$user?.email}</p>
 						
 						{#if $user?.is_admin}
 							<div class="mt-4">
@@ -97,20 +95,10 @@
 
 					<div class="mt-6 pt-6 border-t border-gray-200">
 						<div class="space-y-3">
-							<div class="flex items-center text-sm text-gray-600">
-								<Mail class="w-4 h-4 mr-2" />
-								{$user?.email}
-							</div>
-							<div class="flex items-center text-sm text-gray-600">
+							<div class="flex items-center text-sm text-gray-600" title={$user?.created_at ? formatTimeForUser($user?.created_at).date_display : 'Unknown'}>
 								<Calendar class="w-4 h-4 mr-2" />
-								Joined {formatDate($user?.created_at)}
+								Joined {formatRelativeTime($user?.created_at)}
 							</div>
-							{#if $user?.last_login}
-								<div class="flex items-center text-sm text-gray-600">
-									<Calendar class="w-4 h-4 mr-2" />
-									Last login {formatDate($user?.last_login)}
-								</div>
-							{/if}
 						</div>
 					</div>
 				</div>

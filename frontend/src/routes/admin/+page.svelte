@@ -3,7 +3,6 @@
 	import { user, isAuthenticated } from '$lib/stores/auth';
 	import { createUser } from '$lib/services/auth';
 	import { addToast } from '$lib/stores/toast';
-	import { onMount } from 'svelte';
 	import { UserPlus, Loader2, Shield, Eye, EyeOff } from 'lucide-svelte';
 	import type { UserCreate } from '$lib/types';
 
@@ -16,11 +15,9 @@
 	let isLoading = false;
 	let showPassword = false;
 
-	onMount(() => {
-		if (!$isAuthenticated || !$user?.is_admin) {
-			goto('/dashboard');
-		}
-	});
+	$: if (!$isAuthenticated || !$user?.is_admin) {
+		goto('/dashboard');
+	}
 
 	async function handleCreateUser() {
 		if (!formData.account_name || !formData.email || !formData.password) {

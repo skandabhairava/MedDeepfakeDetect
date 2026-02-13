@@ -1,10 +1,11 @@
 """Analysis API endpoints."""
 
 import time
+import base64
 from datetime import datetime
 from typing import Dict
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -43,6 +44,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 async def analyze_xray(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    name: str = Form(...),
     current_user: dict = Depends(get_current_user)
 ) -> AnalysisResponse:
     """Analyze knee X-ray image for authenticity and arthritis severity.
@@ -70,8 +72,16 @@ async def analyze_xray(
     )
     
     temp_file_path = None
+    image_base64 = None
     
     try:
+        # Read file content as base64
+        file_content = await file.read()
+        image_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # Reset file pointer for analysis
+        file.file.seek(0)
+        
         # Validate and save uploaded file
         temp_file_path = save_upload_file(file)
         
@@ -91,6 +101,8 @@ async def analyze_xray(
                 user_id=current_user["id"],
                 analysis_type="xray",
                 filename=file.filename,
+                name=name,
+                image_base64=image_base64,
                 results=results,
                 confidence=confidence
             )
@@ -155,6 +167,7 @@ async def analyze_xray(
 async def analyze_ct_scan(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    name: str = Form(...),
     current_user: dict = Depends(get_current_user)
 ) -> AnalysisResponse:
     """Analyze CT scan image for authenticity.
@@ -182,8 +195,16 @@ async def analyze_ct_scan(
     )
     
     temp_file_path = None
+    image_base64 = None
     
     try:
+        # Read file content as base64
+        file_content = await file.read()
+        image_base64 = base64.b64encode(file_content).decode('utf-8')
+        
+        # Reset file pointer for analysis
+        file.file.seek(0)
+        
         # Validate and save uploaded file
         temp_file_path = save_upload_file(file)
         
@@ -203,6 +224,8 @@ async def analyze_ct_scan(
                 user_id=current_user["id"],
                 analysis_type="ct",
                 filename=file.filename,
+                name=name,
+                image_base64=image_base64,
                 results=results,
                 confidence=confidence
             )

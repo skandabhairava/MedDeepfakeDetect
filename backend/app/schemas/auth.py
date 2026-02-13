@@ -26,7 +26,6 @@ class UserResponse(BaseModel):
     email: str
     is_admin: bool
     created_at: datetime
-    last_login: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -55,6 +54,8 @@ class AnalysisHistory(BaseModel):
     id: int
     analysis_type: str
     filename: str
+    name: str
+    image_base64: Optional[str] = None
     results: dict
     timestamp: datetime
     confidence: Optional[float] = None

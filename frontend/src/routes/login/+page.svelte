@@ -4,7 +4,6 @@
 	import { addToast } from '$lib/stores/toast';
 	import { Brain, Eye, EyeOff } from 'lucide-svelte';
 	import type { LoginCredentials } from '$lib/types';
-    import { onMount } from 'svelte';
     import { isAuthenticated } from '$lib/stores/auth';
 
 	let email = '';
@@ -12,12 +11,10 @@
 	let isLoading = false;
 	let showPassword = false;
 
-	onMount(() => {
-		if ($isAuthenticated) {
-			goto('/dashboard');
-			return;
-		}
-	})
+	// Redirect if already authenticated
+	$: if ($isAuthenticated) {
+		goto('/dashboard');
+	}
 
 	async function handleLogin() {
 		if (!email || !password) {

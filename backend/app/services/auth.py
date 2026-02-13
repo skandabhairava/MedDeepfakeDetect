@@ -89,9 +89,6 @@ class AuthService:
         if not self.verify_password(password, user["password_hash"]):
             return None
         
-        # Update last login
-        db.update_last_login(user["id"])
-        
         logger.info(f"User authenticated: {email}")
         return user
     

@@ -1,31 +1,38 @@
 # Medical Deepfake Analyzer
 
-A production-ready web application for medical image authenticity analysis using PyTorch models. The system analyzes knee X-ray images for authenticity and arthritis severity, and CT scans for authenticity detection.
+A comprehensive web application for medical image authenticity analysis using PyTorch models. The system analyzes knee X-ray images for authenticity and arthritis severity, and CT scans for authenticity detection with full user authentication and analysis history tracking.
 
 ## Architecture
 
-- **Frontend**: SvelteKit with TypeScript, TailwindCSS, and PWA capabilities
+- **Frontend**: SvelteKit with TypeScript, TailwindCSS, and component-based architecture
 - **Backend**: FastAPI with Python, using uv for dependency management
+- **Authentication**: JWT-based authentication with user management
+- **Database**: SQLite for user data and analysis history
 - **Communication**: REST API with JSON
 - **Models**: PyTorch-based with mock implementations for demonstration
 
 ## Features
 
 ### Backend
-- FastAPI REST API with structured logging
+- FastAPI REST API with structured logging and error handling
+- JWT-based authentication system with user registration and login
+- SQLite database for user management and analysis history
 - Mock PyTorch models for knee X-ray and CT scan analysis
-- File validation and security measures
-- Rate limiting and CORS configuration
-- Comprehensive error handling
-- Health check endpoint
+- File validation, security measures, and rate limiting
+- CORS configuration and comprehensive API documentation
+- Analysis history tracking with pagination
+- Admin functionality for user management
 
 ### Frontend
 - Modern medical UI with drag-and-drop file upload
-- Real-time analysis results with confidence indicators
-- Local storage for upload history
-- Progressive Web App (PWA) with offline capabilities
-- Responsive design for mobile and desktop
-- Medical-themed styling with DaisyUI components
+- Real-time analysis results with confidence indicators and GradCAM visualization
+- User authentication flow with login/logout functionality
+- Personal dashboard and analysis history
+- Profile management and password change
+- Admin panel for user management
+- Responsive design with mobile and desktop support
+- Medical-themed styling with custom components
+- Toast notifications and loading states
 
 ## Project Structure
 
@@ -33,25 +40,30 @@ A production-ready web application for medical image authenticity analysis using
 medical-deepfake-website/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # API endpoints
+│   │   ├── api/          # API endpoints (analyze, auth, health)
 │   │   ├── core/         # Configuration and logging
-│   │   ├── models/       # PyTorch model implementations
-│   │   ├── services/     # Business logic
-│   │   ├── schemas/      # Pydantic models
+│   │   ├── models/       # PyTorch models and database
+│   │   ├── schemas/      # Pydantic models for requests/responses
+│   │   ├── services/     # Business logic (auth, model service)
 │   │   └── utils/        # Utility functions
 │   ├── tests/            # Test suite
 │   ├── main.py           # FastAPI application entry point
 │   ├── pyproject.toml    # Python dependencies (uv)
-│   └── .env.example      # Environment variables template
+│   ├── .env.example      # Environment variables template
+│   └── medical_deepfake.db  # SQLite database
 ├── frontend/
 │   ├── src/
-│   │   ├── routes/       # SvelteKit pages
-│   │   ├── lib/          # Utilities and API client
-│   │   ├── components/   # Reusable components
-│   │   └── styles/       # Global styles
+│   │   ├── routes/       # SvelteKit pages (login, analyze, dashboard, etc.)
+│   │   ├── lib/
+│   │   │   ├── components/  # Reusable UI components
+│   │   │   ├── services/    # API client services
+│   │   │   ├── stores/       # Svelte stores for state management
+│   │   │   ├── types/        # TypeScript type definitions
+│   │   │   └── utils/        # Utility functions
+│   │   └── app.css       # Global styles
 │   ├── static/           # Static assets
 │   ├── package.json      # Node.js dependencies
-│   └── vite.config.ts    # Vite configuration with PWA
+│   └── vite.config.ts    # Vite configuration
 └── README.md
 ```
 
@@ -113,17 +125,82 @@ npm run dev
 
 The frontend will be available at `http://localhost:5173`
 
+## Default Admin User
+
+The system comes with a default admin user for initial setup:
+- **Email**: admin@example.com
+- **Password**: admin123
+
+> **Important**: Change the default admin password after first login for security.
+
+## Application Pages
+
+### Public Pages
+- **Home (`/`)**: Landing page with application overview
+- **Login (`/login`)**: User authentication
+
+### Authenticated Pages
+- **Dashboard (`/dashboard`)**: User dashboard with recent analyses
+- **Analysis (`/analyze`)**: Main analysis interface for X-ray and CT scans
+- **History (`/history`)**: Paginated analysis history with management
+- **Profile (`/profile`)**: User profile and password management
+
+### Admin Pages
+- **Admin (`/admin`)**: User management and system administration
+
 ## API Endpoints
+
+### Authentication
+- `POST /auth/login` - User login and token generation
+- `POST /auth/register` - Create new user (admin only)
+- `GET /auth/me` - Get current user information
+- `POST /auth/change-password` - Change user password
+- `GET /auth/history` - Get user analysis history
+- `DELETE /auth/history/{id}` - Delete analysis history item
+
+### Analysis
+- `POST /analyze/xray` - Analyze knee X-ray image
+- `POST /analyze/ct` - Analyze CT scan image
 
 ### Health Check
 - `GET /health` - Check API and model status
 
-### Analysis Endpoints
-- `POST /analyze/xray` - Analyze knee X-ray image
-- `POST /analyze/ct` - Analyze CT scan image
-
 ### API Documentation
 Visit `http://localhost:8000/docs` for interactive API documentation.
+
+## Analysis Features
+
+### Knee X-Ray Analysis
+- **Authenticity Detection**: Determines if the X-ray is authentic or potentially manipulated
+- **Arthritis Severity**: Classifies arthritis severity (Normal, Mild, Moderate, Severe)
+- **GradCAM Visualization**: Shows regions of interest for model decisions
+- **Confidence Scores**: Provides confidence levels for all predictions
+
+### CT Scan Analysis
+- **Authenticity Detection**: Determines if the CT scan is authentic or potentially manipulated
+- **GradCAM Visualization**: Highlights areas used for authenticity determination
+- **Detailed Metrics**: Processing time, model information, and device used
+
+## Database Schema
+
+### Users Table
+- `id`: Primary key
+- `account_name`: User's display name
+- `email`: Unique email address
+- `password_hash`: Bcrypt hashed password
+- `is_admin`: Admin flag
+- `created_at`: Account creation timestamp
+
+### Analysis History Table
+- `id`: Primary key
+- `user_id`: Foreign key to users table
+- `analysis_type`: Type of analysis (xray/ct)
+- `filename`: Original filename
+- `name`: User-provided analysis name
+- `image_base64`: Base64 encoded image
+- `results`: JSON results from analysis
+- `confidence`: Overall confidence score
+- `timestamp`: Analysis timestamp
 
 ## Testing
 
@@ -157,6 +234,9 @@ npm run check
 
 # Run linting
 npm run lint
+
+# Format code
+npm run format
 ```
 
 ## Model Integration
@@ -197,6 +277,39 @@ DEVICE=cuda
 2. Ensure CUDA-compatible PyTorch is installed:
 ```bash
 uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+```
+
+## Configuration
+
+### Environment Variables
+
+Backend configuration via `.env` file:
+
+```env
+# Application Settings
+APP_NAME="Medical Deepfake Backend"
+APP_VERSION="0.1.0"
+DEBUG=true
+HOST=0.0.0.0
+PORT=8000
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=100
+RATE_LIMIT_WINDOW=3600
+
+# File Upload Settings
+MAX_FILE_SIZE=10485760  # 10MB
+UPLOAD_DIR="uploads"
+ALLOWED_EXTENSIONS=["jpg", "jpeg", "png", "dicom", "dcm"]
+
+# Model Settings
+MODEL_DIR="models"
+INFERENCE_TIMEOUT=30
+DEVICE="cpu"  # Change to "cuda" for GPU inference
+
+# Logging
+LOG_LEVEL="INFO"
+LOG_FORMAT="json"
 ```
 
 ## Deployment
@@ -244,26 +357,27 @@ npm run build
 2. **Deploy to Static Hosting:**
 The `build/` directory can be deployed to any static hosting service (Vercel, Netlify, etc.).
 
-3. **PWA Configuration:**
-The application is pre-configured as a PWA. Service worker and manifest are automatically generated.
-
 ### Horizontal Scaling
 
 For production scaling:
 
 1. **Load Balancer:** Place API servers behind a load balancer
-2. **Redis:** Configure Redis for shared rate limiting
-3. **Model Servers:** Deploy inference workers on separate GPU servers
-4. **File Storage:** Use cloud storage for uploaded files
-5. **Monitoring:** Add health checks and monitoring
+2. **Database:** Consider PostgreSQL for multi-instance deployments
+3. **Redis:** Configure Redis for shared rate limiting
+4. **Model Servers:** Deploy inference workers on separate GPU servers
+5. **File Storage:** Use cloud storage for uploaded files
+6. **Monitoring:** Add health checks and monitoring
 
 ## Security Features
 
+- JWT-based authentication with secure token handling
 - File type and size validation
 - CORS configuration
-- Rate limiting with Redis
-- Input sanitization
+- Rate limiting with Redis support
+- Input sanitization and validation
 - Structured logging for audit trails
+- Password hashing with bcrypt
+- Role-based access control (admin/user)
 - No direct file execution risks
 
 ## Development
@@ -290,6 +404,13 @@ npm run lint
 4. Create corresponding API endpoint
 5. Update frontend to support new model type
 
+### Adding New Pages
+
+1. Create new Svelte component in `frontend/src/routes/`
+2. Add navigation item in `Navigation.svelte`
+3. Update route protection in layout if needed
+4. Add any required API services
+
 ## Contributing
 
 1. Fork the repository
@@ -312,10 +433,14 @@ For questions and support:
 
 ## Future Enhancements
 
-- Authentication and authorization
-- Real-time WebSocket updates
-- Batch image processing
+- DICOM file format support
+- Real-time WebSocket updates for long-running analyses
+- Batch image processing capabilities
 - Model versioning and A/B testing
 - Advanced analytics dashboard
-- Integration with DICOM standards
-- Cloud deployment templates
+- Integration with PACS systems
+- Cloud deployment templates (AWS, GCP, Azure)
+- Mobile application
+- Multi-language support
+- Export functionality (PDF reports)
+- Integration with hospital information systems

@@ -61,12 +61,19 @@ export const api = {
 			body: body ? JSON.stringify(body) : undefined,
 		}),
 	delete: <T>(endpoint: string) => apiRequest<T>(endpoint, { method: 'DELETE' }),
-	upload: async <T>(endpoint: string, file: File): Promise<T> => {
+	upload: async <T>(endpoint: string, file: File, additionalData?: Record<string, string>): Promise<T> => {
 		const url = `${API_BASE_URL}${endpoint}`;
 		const token = localStorage.getItem('auth_token');
 		
 		const formData = new FormData();
 		formData.append('file', file);
+		
+		// Add additional form data if provided
+		if (additionalData) {
+			for (const [key, value] of Object.entries(additionalData)) {
+				formData.append(key, value);
+			}
+		}
 		
 		const headers: Record<string, string> = {};
 		if (token) {

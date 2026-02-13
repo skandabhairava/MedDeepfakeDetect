@@ -2,7 +2,7 @@
 
 import sqlite3
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
 
@@ -31,8 +31,7 @@ class Database:
                     email TEXT NOT NULL UNIQUE,
                     password_hash TEXT NOT NULL,
                     is_admin BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_login TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             
@@ -43,12 +42,23 @@ class Database:
                     user_id INTEGER NOT NULL,
                     analysis_type TEXT NOT NULL,
                     filename TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    image_base64 TEXT,
                     results TEXT NOT NULL,
                     confidence REAL,
                     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
                 )
             """)
+            
+            # Add new columns if they don't exist (for existing databases)
+            cursor.execute("PRAGMA table_info(analysis_history)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'name' not in columns:
+                cursor.execute("ALTER TABLE analysis_history ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+            if 'image_base64' not in columns:
+                cursor.execute("ALTER TABLE analysis_history ADD COLUMN image_base64 TEXT")
             
             # Create indexes
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
@@ -118,33 +128,37 @@ class Database:
                 logger.info(f"Updated password for user ID: {user_id}")
             return updated
     
-    def update_last_login(self, user_id: int) -> bool:
-        """Update user last login timestamp."""
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
-                (user_id,)
-            )
-            conn.commit()
-            return cursor.rowcount > 0
-    
-    def add_analysis_history(self, user_id: int, analysis_type: str, filename: str, 
-                           results: Dict[str, Any], confidence: Optional[float] = None) -> int:
+    def add_analysis_history(self, user_id: int, analysis_type: str, filename: str, name: str,
+                           image_base64: Optional[str], results: Dict[str, Any], confidence: Optional[float] = None) -> int:
         """Add analysis history entry."""
+        utc_now = datetime.now(timezone.utc).isoformat()
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO analysis_history (user_id, analysis_type, filename, results, confidence)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO analysis_history (user_id, analysis_type, filename, name, image_base64, results, confidence, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (user_id, analysis_type, filename, json.dumps(results), confidence)
+                (user_id, analysis_type, filename, name, image_base64, json.dumps(results), confidence, utc_now)
             )
             conn.commit()
             history_id = cursor.lastrowid
             logger.info(f"Added analysis history for user {user_id}: {analysis_type}")
             return history_id
+    
+    def delete_analysis_history(self, user_id: int, history_id: int) -> bool:
+        """Delete a specific analysis history entry."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM analysis_history WHERE id = ? AND user_id = ?",
+                (history_id, user_id)
+            )
+            conn.commit()
+            deleted = cursor.rowcount > 0
+            if deleted:
+                logger.info(f"Deleted analysis history {history_id} for user {user_id}")
+            return deleted
     
     def get_user_history(self, user_id: int, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         """Get user analysis history with pagination."""

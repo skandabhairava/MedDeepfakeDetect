@@ -2,26 +2,34 @@
 	import { goto } from '$app/navigation';
 	import { isAuthenticated, user } from '$lib/stores/auth';
 	import { getAnalysisHistory } from '$lib/services/analysis';
-	import { formatDate, getConfidenceColor } from '$lib/utils';
+	import { getConfidenceColor } from '$lib/utils';
+	import { formatTimeForUser, formatRelativeTime } from '$lib/utils/timezone';
 	import { onMount } from 'svelte';
 	import { Activity, TrendingUp, Clock, FileImage } from 'lucide-svelte';
 
 	let recentAnalyses: any[] = [];
 	let isLoading = true;
 
-	onMount(async () => {
-		if (!$isAuthenticated) {
-			goto('/login');
-			return;
-		}
+	// Redirect if not authenticated
+	$: if (!$isAuthenticated) {
+		goto('/login');
+	}
 
-		// Load recent analyses
+	// Load recent analyses on mount
+	onMount(async () => {
+		if ($isAuthenticated) {
+			await loadRecentAnalyses();
+		}
+	});
+
+	async function loadRecentAnalyses() {
+		isLoading = true;
 		const history = await getAnalysisHistory(1, 5);
 		if (history) {
 			recentAnalyses = history.history;
 		}
 		isLoading = false;
-	});
+	}
 
 	function getAuthenticityIcon(isAuthentic: boolean) {
 		return isAuthentic ? TrendingUp : Activity;
@@ -144,7 +152,7 @@
 									<div>
 										<p class="font-medium text-gray-900">{analysis.filename}</p>
 										<p class="text-sm text-gray-600">
-											{analysis.analysis_type.toUpperCase()} • {formatDate(analysis.timestamp)}
+											{analysis.analysis_type.toUpperCase()} • {formatRelativeTime(analysis.timestamp)}
 										</p>
 									</div>
 								</div>

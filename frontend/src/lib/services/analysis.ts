@@ -2,7 +2,7 @@ import { api } from './api';
 import { addToast } from '$lib/stores/toast';
 import type { AnalysisResponse, HistoryResponse } from '$lib/types';
 
-export async function analyzeXRay(file: File): Promise<AnalysisResponse | null> {
+export async function analyzeXRay(file: File, name: string): Promise<AnalysisResponse | null> {
 	try {
 		addToast({
 			type: 'info',
@@ -10,7 +10,7 @@ export async function analyzeXRay(file: File): Promise<AnalysisResponse | null> 
 			message: 'Processing your knee X-ray image...'
 		});
 		
-		const result = await api.upload<AnalysisResponse>('/analyze/xray', file);
+		const result = await api.upload<AnalysisResponse>('/analyze/xray', file, { name });
 		
 		addToast({
 			type: 'success',
@@ -29,7 +29,7 @@ export async function analyzeXRay(file: File): Promise<AnalysisResponse | null> 
 	}
 }
 
-export async function analyzeCTScan(file: File): Promise<AnalysisResponse | null> {
+export async function analyzeCTScan(file: File, name: string): Promise<AnalysisResponse | null> {
 	try {
 		addToast({
 			type: 'info',
@@ -37,7 +37,7 @@ export async function analyzeCTScan(file: File): Promise<AnalysisResponse | null
 			message: 'Processing your CT scan image...'
 		});
 		
-		const result = await api.upload<AnalysisResponse>('/analyze/ct', file);
+		const result = await api.upload<AnalysisResponse>('/analyze/ct', file, { name });
 		
 		addToast({
 			type: 'success',
@@ -67,5 +67,26 @@ export async function getAnalysisHistory(page: number = 1, pageSize: number = 10
 			message: error instanceof Error ? error.message : 'Could not fetch analysis history'
 		});
 		return null;
+	}
+}
+
+export async function deleteHistoryItem(historyId: number): Promise<boolean> {
+	try {
+		await api.delete(`/auth/history/${historyId}`);
+		
+		addToast({
+			type: 'success',
+			title: 'Item deleted',
+			message: 'History item deleted successfully'
+		});
+		
+		return true;
+	} catch (error) {
+		addToast({
+			type: 'error',
+			title: 'Delete failed',
+			message: error instanceof Error ? error.message : 'Failed to delete history item'
+		});
+		return false;
 	}
 }

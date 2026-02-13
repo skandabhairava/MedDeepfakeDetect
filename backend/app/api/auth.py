@@ -142,6 +142,23 @@ async def get_user_history(
     return HistoryResponse(**history_data)
 
 
+@router.delete("/history/{history_id}")
+async def delete_history_item(
+    history_id: int,
+    current_user: dict = Depends(get_current_user)
+) -> dict:
+    """Delete a specific analysis history item."""
+    success = db.delete_analysis_history(current_user["id"], history_id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="History item not found or you don't have permission to delete it"
+        )
+    
+    return {"message": "History item deleted successfully"}
+
+
 @router.get("/users", response_model=list[UserResponse])
 async def list_users(current_user: dict = Depends(get_admin_user)) -> list[UserResponse]:
     """List all users (admin only)."""
