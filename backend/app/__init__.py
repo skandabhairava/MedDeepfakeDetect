@@ -1,0 +1,1 @@
+"""Medical Deepfake Backend Application."""

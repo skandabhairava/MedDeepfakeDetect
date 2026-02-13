@@ -1,0 +1,38 @@
+[project]
+name = "medical-deepfake-backend"
+version = "0.1.0"
+description = "Medical image authenticity analysis backend"
+authors = [
+    {name = "Medical Deepfake Team", email = "team@medicaldeepfake.com"}
+]
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    "pillow>=10.0.0",
+    "pydantic>=2.4.0",
+    "pydantic-settings>=2.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "slowapi>=0.1.9",
+    "redis>=5.0.0",
+    "structlog>=23.2.0",
+    "torch>=2.1.0",
+    "torchvision>=0.16.0",
+    "numpy>=1.24.0",
+    "opencv-python>=4.8.0",
+    "email-validator>=2.0.0",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.25.0",
+    "black>=23.9.0",
+    "ruff>=0.1.0",
+    "mypy>=1.6.0",
+]

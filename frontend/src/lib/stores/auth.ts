@@ -1,0 +1,6 @@
+import { writable } from 'svelte/store';
+import type { User } from '$lib/types';
+
+export const user = writable<User | null>(null);
+export const isAuthenticated = writable<boolean>(false);
+export const token = writable<string | null>(null);
