@@ -104,7 +104,6 @@ class TestAnalysisEndpoints:
         assert "device" in data
         assert "authenticity" in data
         assert "scan_type" in data
-        assert "analysis_notes" in data
         
         # Check structure of authenticity results
         auth = data["authenticity"]
@@ -117,7 +116,6 @@ class TestAnalysisEndpoints:
         
         # Check other fields
         assert data["scan_type"] == "CT"
-        assert isinstance(data["analysis_notes"], str)
         
         # Check metadata
         assert data["model_name"] == "ct_scan_model"

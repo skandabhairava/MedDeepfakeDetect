@@ -336,16 +336,6 @@
 						</div>
 					</div>
 				{/if}
-
-				<!-- Analysis Notes -->
-				{#if analysisResult.analysis_notes}
-					<div>
-						<h3 class="font-medium text-gray-900 mb-3">Analysis Notes</h3>
-						<div class="border border-gray-200 rounded-lg p-4">
-							<p class="text-gray-700">{analysisResult.analysis_notes}</p>
-						</div>
-					</div>
-				{/if}
 			</div>
 		{/if}
 	</div>

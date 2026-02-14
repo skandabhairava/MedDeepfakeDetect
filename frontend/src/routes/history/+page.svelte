@@ -292,12 +292,6 @@
 									</div>
 								{/if}
 							</div>
-
-							{#if analysis.results.analysis_notes}
-								<div class="mt-4 p-3 bg-gray-50 rounded-lg">
-									<p class="text-sm text-gray-700">{analysis.results.analysis_notes}</p>
-								</div>
-							{/if}
 						</div>
 					{/each}
 				</div>

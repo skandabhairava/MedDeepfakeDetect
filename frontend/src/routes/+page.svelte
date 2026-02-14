@@ -14,7 +14,7 @@
 <div class="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center px-4">
 	<div class="max-w-6xl w-full">
 		<div class="text-center mb-12">
-			<div class="flex justify-center items-center space-x-3 mb-6">
+			<div class="flex justify-center items-center space-x-3 mb-6 mt-4">
 				<div class="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center animate-pulse-slow">
 					<Brain class="w-10 h-10 text-white" />
 				</div>

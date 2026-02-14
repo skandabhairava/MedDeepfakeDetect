@@ -1,0 +1,28 @@
+{
+  "name": "Medical Image Analyzer - Deepfake Detection",
+  "short_name": "Medical Analyzer",
+  "description": "Advanced medical image analysis for detecting deepfakes and assessing arthritis severity",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "health", "productivity"],
+  "lang": "en",
+  "dir": "ltr"
+}

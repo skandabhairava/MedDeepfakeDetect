@@ -7,7 +7,7 @@ import uuid
 
 from ..core.config import get_settings
 from ..core.logging import get_logger
-from ..models import KneeXRayModel, CTScanModel
+from ..models import KneeXRayModel, CTScanModel, BaseModel
 
 
 class ModelService:
@@ -19,7 +19,7 @@ class ModelService:
         self.logger = get_logger("model_service")
         
         # Model registry
-        self.models: Dict[str, object] = {}
+        self.models: Dict[str, BaseModel] = {}
         
         # Initialize models
         self._initialize_models()

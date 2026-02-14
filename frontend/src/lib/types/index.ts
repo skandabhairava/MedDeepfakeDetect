@@ -46,7 +46,6 @@ export interface AnalysisResponse {
 		classification: string;
 	};
 	scan_type?: string;
-	analysis_notes?: string;
 	gradcam?: string; // Base64 encoded GradCAM image
 	error?: string;
 }

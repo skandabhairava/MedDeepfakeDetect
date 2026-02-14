@@ -9,6 +9,7 @@ from PIL import Image
 import torch
 
 from ..core.logging import get_logger
+from ..utils import model_utils
 
 
 class BaseModel(ABC):
@@ -24,6 +25,7 @@ class BaseModel(ABC):
         self.model_name = model_name
         self.device = device
         self.model = None
+        self.gradcam_analyser = None
         self.logger = get_logger(f"model.{model_name}")
         
     @abstractmethod
@@ -33,6 +35,12 @@ class BaseModel(ABC):
         Args:
             model_path: Path to model checkpoint
         """
+        pass
+
+    @abstractmethod
+    def load_gradcam(self, model_path: str) -> None:
+        """Load model into gradcam."""
+        # self.gradcam_analyser = model_utils.GradCAMPlusPlus(self.model, ...)
         pass
     
     @abstractmethod

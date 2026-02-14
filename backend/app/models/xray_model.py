@@ -149,7 +149,6 @@ class KneeXRayModel(BaseModel):
             }
         else:
             results["arthritis"] = {
-                "note": "Arthritis classification not available for detected synthetic images",
                 "probabilities": {
                     label: round(float(prob), 3)
                     for label, prob in zip(self.arthritis_labels, arthritis_probs)

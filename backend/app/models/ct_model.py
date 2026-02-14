@@ -116,7 +116,6 @@ class CTScanModel(BaseModel):
                 "raw_probability": round(authenticity_prob, 3)
             },
             "scan_type": "CT",
-            "analysis_notes": "CT scan authenticity detection completed"
         }
         
         return results

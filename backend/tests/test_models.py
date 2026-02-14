@@ -181,7 +181,6 @@ class TestCTScanModel:
         
         assert "authenticity" in results
         assert "scan_type" in results
-        assert "analysis_notes" in results
         
         # Check authenticity structure
         auth = results["authenticity"]
@@ -193,7 +192,6 @@ class TestCTScanModel:
         
         # Check other fields
         assert results["scan_type"] == "CT"
-        assert isinstance(results["analysis_notes"], str)
     
     def test_analyze_complete_pipeline(self, model, sample_image, tmp_path):
         """Test complete analysis pipeline."""

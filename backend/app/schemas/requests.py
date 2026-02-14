@@ -36,7 +36,6 @@ class AnalysisResponse(BaseModel):
     # Optional additional analysis
     arthritis: Optional[dict] = Field(None, description="Arthritis classification results")
     scan_type: Optional[str] = Field(None, description="Type of medical scan")
-    analysis_notes: Optional[str] = Field(None, description="Additional analysis notes")
     
     # Error information
     error: Optional[str] = Field(None, description="Error message if analysis failed")
