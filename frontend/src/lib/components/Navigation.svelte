@@ -38,7 +38,7 @@
 				<!-- Desktop Navigation -->
 				<div class="hidden md:flex items-center space-x-8">
 					<a
-						href="/"
+						href="/dashboard"
 						class="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors"
 						class:bg-primary-50={currentPath === '/'}
 					>

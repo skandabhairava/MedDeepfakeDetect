@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, description="Server port")
     
     # Rate limiting
-    redis_url: str = Field(default="redis://localhost:6379/0", description="Redis URL")
     rate_limit_requests: int = Field(default=100, description="Rate limit requests per window")
     rate_limit_window: int = Field(default=3600, description="Rate limit window in seconds")
     
@@ -34,6 +33,14 @@ class Settings(BaseSettings):
     model_dir: str = Field(default="models", description="Model directory")
     inference_timeout: int = Field(default=30, description="Inference timeout in seconds")
     device: str = Field(default="cpu", description="Device for inference")
+    
+    # Queue and thread pool settings
+    max_worker_threads: int = Field(default=4, description="Maximum number of worker threads")
+    queue_size_limit: int = Field(default=100, description="Maximum queue size")
+    queue_check_interval: int = Field(default=2, description="Queue status check interval in seconds")
+    
+    # Analysis rate limiting
+    analysis_rate_limit_seconds: int = Field(default=5, description="Minimum seconds between analyses per user")
     
     # Logging
     log_level: str = Field(default="INFO", description="Log level")

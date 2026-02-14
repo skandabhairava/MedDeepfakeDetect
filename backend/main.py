@@ -22,8 +22,9 @@ logger = get_logger("main")
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-# Global model service instance
+# Global instances
 model_service = None
+queue_service = None
 
 
 @asynccontextmanager
@@ -36,9 +37,12 @@ async def lifespan(app: FastAPI):
     
     try:
         # Initialize model service
-        from app.services import ModelService
-        global model_service
+        from app.services import ModelService, queue_service
+        global model_service, queue_service
         model_service = ModelService()
+        
+        # Queue service is automatically initialized on import
+        logger.info("Model service and queue service initialized")
         
         logger.info("Application startup completed")
         
@@ -50,6 +54,14 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down Medical Deepfake Backend")
+    
+    # Stop queue service
+    if queue_service:
+        try:
+            queue_service.stop_queue_processor()
+            logger.info("Queue service stopped")
+        except Exception as e:
+            logger.error(f"Error stopping queue service: {str(e)}")
 
 
 def create_application() -> FastAPI:

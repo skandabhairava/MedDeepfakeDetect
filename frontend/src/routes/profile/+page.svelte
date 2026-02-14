@@ -97,7 +97,7 @@
 						<div class="space-y-3">
 							<div class="flex items-center text-sm text-gray-600" title={$user?.created_at ? formatTimeForUser($user?.created_at).date_display : 'Unknown'}>
 								<Calendar class="w-4 h-4 mr-2" />
-								Joined {formatRelativeTime($user?.created_at)}
+								Joined {formatRelativeTime($user?.created_at || '')}
 							</div>
 						</div>
 					</div>

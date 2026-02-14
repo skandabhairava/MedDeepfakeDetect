@@ -1,56 +1,93 @@
 import { api } from './api';
 import { addToast } from '$lib/stores/toast';
-import type { AnalysisResponse, HistoryResponse } from '$lib/types';
+import { config } from '$lib/config';
+import type { AnalysisResponse, HistoryResponse, QueueSubmissionResponse, AnalysisStatusResponse } from '$lib/types';
 
-export async function analyzeXRay(file: File, name: string): Promise<AnalysisResponse | null> {
+export async function analyzeXRay(file: File, name: string): Promise<QueueSubmissionResponse | null> {
 	try {
 		addToast({
 			type: 'info',
-			title: 'Analyzing X-ray',
-			message: 'Processing your knee X-ray image...'
+			title: 'Submitting X-ray for analysis',
+			message: 'Your X-ray is being added to the analysis queue...'
 		});
 		
-		const result = await api.upload<AnalysisResponse>('/analyze/xray', file, { name });
+		const result = await api.upload<QueueSubmissionResponse>('/analyze/xray', file, { name });
 		
-		addToast({
-			type: 'success',
-			title: 'Analysis complete',
-			message: 'X-ray analysis completed successfully'
-		});
+		if (result.success) {
+			addToast({
+				type: 'success',
+				title: 'X-ray submitted to queue',
+				message: `Position in queue: ${result.queue_position}. Estimated wait time: ${Math.round(result.estimated_wait_time / 60)} minutes`
+			});
+		}
 		
 		return result;
-	} catch (error) {
+	} catch (error: any) {
+		// Handle rate limiting
+		if (error?.status === 429) {
+			addToast({
+				type: 'warning',
+				title: 'Rate limit exceeded',
+				message: error.detail?.message || 'Please wait before submitting another analysis',
+				duration: 5000
+			});
+			return {
+				success: false,
+				error: 'rate_limited',
+				message: error.detail?.message || 'Rate limit exceeded',
+				wait_time: error.detail?.wait_time || config.analysis.statusPollInterval / 1000
+			} as QueueSubmissionResponse;
+		}
+		
 		addToast({
 			type: 'error',
-			title: 'Analysis failed',
-			message: error instanceof Error ? error.message : 'Failed to analyze X-ray'
+			title: 'Submission failed',
+			message: error instanceof Error ? error.message : 'Failed to submit X-ray for analysis'
 		});
 		return null;
 	}
 }
 
-export async function analyzeCTScan(file: File, name: string): Promise<AnalysisResponse | null> {
+export async function analyzeCTScan(file: File, name: string): Promise<QueueSubmissionResponse | null> {
 	try {
 		addToast({
 			type: 'info',
-			title: 'Analyzing CT scan',
-			message: 'Processing your CT scan image...'
+			title: 'Submitting CT scan for analysis',
+			message: 'Your CT scan is being added to the analysis queue...'
 		});
 		
-		const result = await api.upload<AnalysisResponse>('/analyze/ct', file, { name });
+		const result = await api.upload<QueueSubmissionResponse>('/analyze/ct', file, { name });
 		
-		addToast({
-			type: 'success',
-			title: 'Analysis complete',
-			message: 'CT scan analysis completed successfully'
-		});
+		if (result.success) {
+			addToast({
+				type: 'success',
+				title: 'CT scan submitted to queue',
+				message: `Position in queue: ${result.queue_position}. Estimated wait time: ${Math.round(result.estimated_wait_time / 60)} minutes`
+			});
+		}
 		
 		return result;
-	} catch (error) {
+	} catch (error: any) {
+		// Handle rate limiting
+		if (error?.status === 429) {
+			addToast({
+				type: 'warning',
+				title: 'Rate limit exceeded',
+				message: error.detail?.message || 'Please wait before submitting another analysis',
+				duration: 5000
+			});
+			return {
+				success: false,
+				error: 'rate_limited',
+				message: error.detail?.message || 'Rate limit exceeded',
+				wait_time: error.detail?.wait_time || config.analysis.statusPollInterval / 1000
+			} as QueueSubmissionResponse;
+		}
+		
 		addToast({
 			type: 'error',
-			title: 'Analysis failed',
-			message: error instanceof Error ? error.message : 'Failed to analyze CT scan'
+			title: 'Submission failed',
+			message: error instanceof Error ? error.message : 'Failed to submit CT scan for analysis'
 		});
 		return null;
 	}
@@ -88,5 +125,19 @@ export async function deleteHistoryItem(historyId: number): Promise<boolean> {
 			message: error instanceof Error ? error.message : 'Failed to delete history item'
 		});
 		return false;
+	}
+}
+
+export async function getAnalysisStatus(historyId: number): Promise<AnalysisStatusResponse | null> {
+	try {
+		const result = await api.get<AnalysisStatusResponse>(`/analyze/status/${historyId}`);
+		return result;
+	} catch (error) {
+		addToast({
+			type: 'error',
+			title: 'Status check failed',
+			message: error instanceof Error ? error.message : 'Could not fetch analysis status'
+		});
+		return null;
 	}
 }

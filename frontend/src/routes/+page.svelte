@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/stores/auth';
-	import { onMount } from 'svelte';
+	// import { goto } from '$app/navigation';
+	// import { isAuthenticated } from '$lib/stores/auth';
+	// import { onMount } from 'svelte';
 	import { Shield, Brain, Activity, TrendingUp } from 'lucide-svelte';
 
-	onMount(() => {
-		if ($isAuthenticated) {
-			goto('/dashboard');
-		}
-	});
+	// onMount(() => {
+	// 	if ($isAuthenticated) {
+	// 		goto('/dashboard');
+	// 	}
+	// });
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center px-4">

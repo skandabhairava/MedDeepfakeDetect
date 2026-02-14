@@ -5,10 +5,11 @@
 	import { getConfidenceColor } from '$lib/utils';
 	import { formatTimeForUser, formatRelativeTime } from '$lib/utils/timezone';
 	import { onMount } from 'svelte';
-	import { Activity, TrendingUp, Clock, FileImage } from 'lucide-svelte';
+	import { Activity, TrendingUp, Clock, FileImage, RefreshCw } from 'lucide-svelte';
 
 	let recentAnalyses: any[] = [];
 	let isLoading = true;
+	let isRefreshing = false;
 
 	// Redirect if not authenticated
 	$: if (!$isAuthenticated) {
@@ -29,6 +30,15 @@
 			recentAnalyses = history.history;
 		}
 		isLoading = false;
+	}
+
+	async function refreshRecentAnalyses() {
+		isRefreshing = true;
+		const history = await getAnalysisHistory(1, 5);
+		if (history) {
+			recentAnalyses = history.history;
+		}
+		isRefreshing = false;
 	}
 
 	function getAuthenticityIcon(isAuthentic: boolean) {
@@ -122,9 +132,20 @@
 		<div class="card">
 			<div class="flex items-center justify-between mb-4">
 				<h3 class="text-lg font-semibold text-gray-900">Recent Analyses</h3>
-				<a href="/history" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
-					View All
-				</a>
+				<div class="flex items-center space-x-3">
+					<button
+						on:click={refreshRecentAnalyses}
+						disabled={isRefreshing}
+						class="btn btn-secondary btn-sm flex items-center"
+						title="Refresh recent analyses"
+					>
+						<RefreshCw class="w-4 h-4 mr-1 {isRefreshing ? 'animate-spin' : ''}" />
+						{isRefreshing ? 'Refreshing...' : 'Refresh'}
+					</button>
+					<a href="/history" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+						View All
+					</a>
+				</div>
 			</div>
 
 			{#if isLoading}

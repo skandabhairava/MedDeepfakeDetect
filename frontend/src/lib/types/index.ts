@@ -74,3 +74,31 @@ export interface ApiResponse<T> {
 	error?: string;
 	message?: string;
 }
+
+export interface QueueSubmissionResponse {
+	success: boolean;
+	message: string;
+	history_id: number;
+	status: string;
+	queue_position: number;
+	estimated_wait_time: number;
+}
+
+export interface AnalysisStatusResponse {
+	success: boolean;
+	status: {
+		id: number;
+		status: string;
+		queue_position?: number;
+		processing_started?: string;
+		processing_completed?: string;
+		results?: AnalysisResponse;
+		confidence?: number;
+		queue_stats?: {
+			pending_count: number;
+			queue_capacity: number;
+			worker_threads: number;
+			queue_utilization: number;
+		};
+	};
+}

@@ -3,9 +3,9 @@
 	import { isAuthenticated } from '$lib/stores/auth';
 	import { getAnalysisHistory, deleteHistoryItem } from '$lib/services/analysis';
 	import { getConfidenceColor } from '$lib/utils';
-	import { formatTimeForUser, getEffectiveUserTimezone, formatRelativeTime } from '$lib/utils/timezone';
+	import { formatTimeForUser, formatRelativeTime } from '$lib/utils/timezone';
 	import { onMount } from 'svelte';
-	import { FileImage, TrendingUp, Activity, ChevronLeft, ChevronRight, X, Download, Trash2 } from 'lucide-svelte';
+	import { FileImage, TrendingUp, Activity, ChevronLeft, ChevronRight, X, Download, Trash2, RefreshCw, Loader2 } from 'lucide-svelte';
 
 	let analyses: any[] = [];
 	let isLoading = true;
@@ -17,6 +17,7 @@
 	let selectedGradcam: string | null = null;
 	let showImageModal = false;
 	let showGradcamModal = false;
+	let isRefreshing = false;
 
 	// Redirect if not authenticated
 	$: if (!$isAuthenticated) {
@@ -39,6 +40,17 @@
 			totalPages = Math.ceil(totalItems / pageSize);
 		}
 		isLoading = false;
+	}
+
+	async function refreshHistory() {
+		isRefreshing = true;
+		const history = await getAnalysisHistory(currentPage, pageSize);
+		if (history) {
+			analyses = history.history;
+			totalItems = history.total;
+			totalPages = Math.ceil(totalItems / pageSize);
+		}
+		isRefreshing = false;
 	}
 
 	function changePage(newPage: number) {
@@ -67,6 +79,31 @@
 				return 'text-red-600';
 			default:
 				return 'text-gray-600';
+		}
+	}
+
+	function isPendingAnalysis(analysis: any) {
+		return analysis.results?.status === 'pending';
+	}
+
+	function getAnalysisDisplayData(analysis: any) {
+		if (isPendingAnalysis(analysis)) {
+			return {
+				status: analysis.results?.status || 'pending',
+				message: analysis.results?.message || 'Processing...',
+				showAuthenticity: false,
+				showConfidence: false,
+				showArthritis: false,
+				showGradcam: false
+			};
+		} else {
+			return {
+				status: 'completed',
+				showAuthenticity: true,
+				showConfidence: true,
+				showArthritis: analysis.results?.arthritis ? true : false,
+				showGradcam: analysis.results?.gradcam ? true : false
+			};
 		}
 	}
 
@@ -100,9 +137,18 @@
 		if (confirm('Are you sure you want to delete this analysis?')) {
 			const success = await deleteHistoryItem(historyId);
 			if (success) {
-				await loadHistory(); // Reload the history
+				await loadHistory(); // Reload history
 			}
 		}
+	}
+
+	function formatAnalysisTime(timestamp: string) {
+		const relativeTime = formatRelativeTime(timestamp);
+		const timeInfo = formatTimeForUser(timestamp);
+		return {
+			relative: relativeTime,
+			full: timeInfo.full_display,
+		};
 	}
 </script>
 
@@ -115,7 +161,7 @@
 		</div>
 
 		<!-- Stats Summary -->
-		<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+		<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
 			<div class="card">
 				<div class="flex items-center space-x-3">
 					<div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -155,6 +201,7 @@
 					</div>
 				</div>
 			</div>
+		<!-- </div> -->
 
 			<div class="card">
 				<div class="flex items-center space-x-3">
@@ -169,15 +216,40 @@
 					</div>
 				</div>
 			</div>
+
+			<div class="card">
+				<div class="flex items-center space-x-3">
+					<div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+						<FileImage class="w-5 h-5 text-amber-600" />
+					</div>
+					<div>
+						<p class="text-sm text-gray-600">CT Scans</p>
+						<p class="text-xl font-bold text-amber-600">
+							{analyses.filter(a => a.analysis_type === 'ct').length}
+						</p>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<!-- Analyses List -->
 		<div class="card">
 			<div class="flex items-center justify-between mb-6">
 				<h3 class="text-lg font-semibold text-gray-900">Recent Analyses</h3>
-				<a href="/analyze" class="btn btn-primary">
-					New Analysis
-				</a>
+				<div class="flex items-center space-x-3">
+					<button
+						on:click={refreshHistory}
+						disabled={isRefreshing}
+						class="btn btn-secondary btn-sm flex items-center"
+						title="Refresh history"
+					>
+						<RefreshCw class="w-4 h-4 mr-1 {isRefreshing ? 'animate-spin' : ''}" />
+						{isRefreshing ? 'Refreshing...' : 'Refresh'}
+					</button>
+					<a href="/analyze" class="btn btn-primary">
+						New Analysis
+					</a>
+				</div>
 			</div>
 
 			{#if isLoading}
@@ -196,6 +268,8 @@
 			{:else}
 				<div class="space-y-4">
 					{#each analyses as analysis}
+						{@const timeInfo = formatAnalysisTime(analysis.timestamp)}
+						{@const displayData = getAnalysisDisplayData(analysis)}
 						<div class="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
 							<div class="flex items-start justify-between mb-4">
 								<div class="flex items-start space-x-4">
@@ -203,26 +277,41 @@
 										<FileImage class="w-6 h-6 text-gray-600" />
 									</div>
 									<div>
-										<h4 class="font-medium text-gray-900">{analysis.name}</h4>
-										<p class="text-sm text-gray-600 mt-1">{analysis.filename}</p>
+										<h4 class="font-medium text-gray-900">{analysis.name || 'Untitled Analysis'}</h4>
+										<p class="text-sm text-gray-600 mt-1">{analysis.filename || 'Unknown File'}</p>
 										<div class="flex items-center space-x-4 mt-2">
 											<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-												{analysis.analysis_type.toUpperCase()}
+												{analysis.analysis_type?.toUpperCase() || 'UNKNOWN'}
 											</span>
-											<span class="text-sm text-gray-600" title={formatTimeForUser(analysis.timestamp).date_display}>
-												{formatRelativeTime(analysis.timestamp)}
+											<span class="text-sm text-gray-600" title={timeInfo.full}>
+												{timeInfo.relative}
 											</span>
+											{#if displayData.status === 'pending'}
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+													Pending
+												</span>
+											{:else}
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+													Completed
+												</span>
+											{/if}
 										</div>
 									</div>
 								</div>
 								<div class="flex items-center space-x-2">
-									<svelte:component 
-										this={getAuthenticityIcon(analysis.results.authenticity.is_authentic)} 
-										class="w-5 h-5 {getAuthenticityColor(analysis.results.authenticity.is_authentic)}"
-									/>
-									<span class="text-sm font-medium {getAuthenticityColor(analysis.results.authenticity.is_authentic)}">
-										{analysis.results.authenticity.is_authentic ? 'Authentic' : 'Suspicious'}
-									</span>
+									{#if displayData.showAuthenticity}
+										<svelte:component 
+											this={getAuthenticityIcon(analysis.results?.authenticity?.is_authentic)} 
+											class="w-5 h-5 {getAuthenticityColor(analysis.results?.authenticity?.is_authentic)}"
+										/>
+										<span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_authentic)}">
+											{analysis.results?.authenticity?.is_authentic ? 'Authentic' : 'Suspicious'}
+										</span>
+									{:else}
+										<div class="text-sm text-gray-500">
+											{displayData.message}
+										</div>
+									{/if}
 								</div>
 							</div>
 
@@ -238,7 +327,7 @@
 										View Image
 									</button>
 								{/if}
-								{#if analysis.results.gradcam}
+								{#if analysis.results?.gradcam}
 									<button
 										on:click={() => openGradcamModal(analysis.results.gradcam)}
 										class="btn btn-secondary btn-sm"
@@ -257,19 +346,74 @@
 								</button>
 							</div>
 
+							<!-- Arthritis Results -->
+							{#if displayData.showArthritis && analysis.results?.arthritis}
+								<div class="border border-gray-200 rounded-lg p-4">
+									<h4 class="font-medium text-gray-900 mb-3">Arthritis Assessment</h4>
+									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+										<div>
+											<p class="text-sm text-gray-600 mb-1">Severity</p>
+											<p class="text-lg font-semibold {getArthritisSeverityColor(analysis.results.arthritis.severity)}">
+												{analysis.results.arthritis.severity}
+											</p>
+										</div>
+										<div>
+											<p class="text-sm text-gray-600 mb-1">Confidence</p>
+											<p class="text-lg font-semibold {getConfidenceColor(analysis.results.arthritis.confidence)}">
+												{(analysis.results.arthritis.confidence * 100).toFixed(1)}%
+											</p>
+										</div>
+									</div>
+									{#if analysis.results.arthritis.classification}
+										<p class="text-sm text-gray-600 mt-3">
+											Classification: {analysis.results.arthritis.classification}
+										</p>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- GradCAM Visualization -->
+							{#if displayData.showGradcam && analysis.results?.gradcam}
+								<div class="border border-gray-200 rounded-lg p-4">
+									<h4 class="font-medium text-gray-900 mb-3">GradCAM Visualization</h4>
+									<div class="border border-gray-200 rounded-lg p-4">
+										<img
+											src={`data:image/png;base64,${analysis.results.gradcam}`}
+											alt="GradCAM Visualization"
+											class="w-full h-auto"
+										/>
+										<p class="text-sm text-gray-600 mt-2">
+											Areas highlighted in red indicate regions the model focused on during analysis.
+										</p>
+									</div>
+								</div>
+							{/if}
+
 							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 								<div>
 									<p class="text-sm text-gray-600 mb-1">Confidence</p>
 									<div class="flex items-center space-x-2">
-										<div class="flex-1 bg-gray-200 rounded-full h-2">
-											<div
-												class="h-2 rounded-full {analysis.results.authenticity.confidence >= 0.8 ? 'bg-green-500' : analysis.results.authenticity.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'}"
-												style="width: {analysis.results.authenticity.confidence * 100}%"
-											></div>
-										</div>
-										<span class="text-sm font-medium {getConfidenceColor(analysis.results.authenticity.confidence)} min-w-[3rem] text-right">
-											{(analysis.results.authenticity.confidence * 100).toFixed(1)}%
-										</span>
+										{#if displayData.showConfidence && analysis.results?.authenticity?.confidence}
+											<div class="flex-1 bg-gray-200 rounded-full h-2">
+												<div
+													class="h-2 rounded-full {analysis.results.authenticity.confidence >= 0.8 ? 'bg-green-500' : analysis.results.authenticity.confidence >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'}"
+													style="width: {analysis.results.authenticity.confidence * 100}%"
+												></div>
+											</div>
+											<span class="text-sm font-medium {getConfidenceColor(analysis.results.authenticity.confidence)} min-w-[3rem] text-right">
+												{(analysis.results.authenticity.confidence * 100).toFixed(1)}%
+											</span>
+										{:else}
+											<div class="flex-1 bg-gray-200 rounded-full h-2">
+												<div
+													class="h-2 rounded-full bg-gray-500"
+													style="width: 100%"
+												></div>
+											</div>
+											<span class="text-sm font-medium text-gray-600 min-w-[3rem] text-right">
+												<Loader2 class="w-5 h-5 animate-spin" />
+											</span>
+										{/if}
 									</div>
 								</div>
 
@@ -354,11 +498,12 @@
 	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" on:click={closeModals}>
 		<div class="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto" on:click|stopPropagation>
 			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-				<h3 class="text-lg font-semibold text-gray-900">Original Image</h3>
+				<h3 class="text-lg font-semibold text-gray-900 mr-6">Original Image</h3>
 				<div class="flex items-center space-x-2">
 					<button
-						on:click={() => downloadImage(selectedImage, 'original-image.png')}
+						on:click={() => selectedImage && downloadImage(selectedImage, 'original-image.png')}
 						class="btn btn-secondary btn-sm flex items-center"
+						disabled={!selectedImage}
 					>
 						<Download class="w-4 h-4 mr-1" />
 						Download
@@ -390,8 +535,9 @@
 				<h3 class="text-lg font-semibold text-gray-900">GradCAM Visualization</h3>
 				<div class="flex items-center space-x-2">
 					<button
-						on:click={() => downloadImage(selectedGradcam, 'gradcam-visualization.png')}
+						on:click={() => selectedGradcam && downloadImage(selectedGradcam, 'gradcam-visualization.png')}
 						class="btn btn-secondary btn-sm flex items-center"
+						disabled={!selectedGradcam}
 					>
 						<Download class="w-4 h-4 mr-1" />
 						Download

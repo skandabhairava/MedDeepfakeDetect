@@ -25,7 +25,7 @@ class BaseModel(ABC):
         self.model_name = model_name
         self.device = device
         self.model = None
-        self.gradcam_analyser = None
+        # self.gradcam_analyser = None
         self.logger = get_logger(f"model.{model_name}")
         
     @abstractmethod
@@ -37,11 +37,11 @@ class BaseModel(ABC):
         """
         pass
 
-    @abstractmethod
-    def load_gradcam(self, model_path: str) -> None:
-        """Load model into gradcam."""
-        # self.gradcam_analyser = model_utils.GradCAMPlusPlus(self.model, ...)
-        pass
+    # @abstractmethod
+    # def load_gradcam(self, model_path: str) -> None:
+    #     """Load model into gradcam."""
+    #     # self.gradcam_analyser = model_utils.GradCAMPlusPlus(self.model, ...)
+    #     pass
     
     @abstractmethod
     def preprocess(self, image: Image.Image) -> torch.Tensor:
