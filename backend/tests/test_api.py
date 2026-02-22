@@ -240,5 +240,4 @@ class TestRootEndpoint:
         assert "health" in data
         
         assert data["message"] == "Medical Deepfake Backend API"
-        assert data["docs"] == "/docs"
         assert data["health"] == "/health"

@@ -83,15 +83,14 @@ medical-deepfake-website/
 cd medical-deepfake-website/backend
 ```
 
-2. Create Python environment with uv:
+2. Create Python environment and Install dependencies using uv:
 ```bash
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync
 ```
 
-3. Install dependencies:
+3. Activate Environment:
 ```bash
-uv pip install -e .
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 4. Copy environment variables:
@@ -101,7 +100,7 @@ cp .env.example .env
 
 5. Start the development server:
 ```bash
-uv run python main.py
+uv run main.py
 ```
 
 The backend API will be available at `http://localhost:8000`
@@ -118,12 +117,10 @@ cd medical-deepfake-website/frontend
 npm install
 ```
 
-3. Start the development server:
+3. Build the static HTML Pages:
 ```bash
-npm run dev
+npm run build
 ```
-
-The frontend will be available at `http://localhost:5173`
 
 ## Default Admin User
 
@@ -165,9 +162,6 @@ The system comes with a default admin user for initial setup:
 ### Health Check
 - `GET /health` - Check API and model status
 
-### API Documentation
-Visit `http://localhost:8000/docs` for interactive API documentation.
-
 ## Analysis Features
 
 ### Knee X-Ray Analysis
@@ -201,43 +195,6 @@ Visit `http://localhost:8000/docs` for interactive API documentation.
 - `results`: JSON results from analysis
 - `confidence`: Overall confidence score
 - `timestamp`: Analysis timestamp
-
-## Testing
-
-### Backend Tests
-
-Run the test suite using uv:
-
-```bash
-cd medical-deepfake-website/backend
-
-# Run all tests
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=app
-
-# Run specific test file
-uv run pytest tests/test_models.py
-
-# Run with verbose output
-uv run pytest -v
-```
-
-### Frontend Tests
-
-```bash
-cd medical-deepfake-website/frontend
-
-# Run type checking
-npm run check
-
-# Run linting
-npm run lint
-
-# Format code
-npm run format
-```
 
 ## Model Integration
 

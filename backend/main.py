@@ -96,7 +96,6 @@ def create_application() -> FastAPI:
         return {
             "message": "Medical Deepfake Backend API",
             "version": settings.app_version,
-            "docs": "/docs",
             "health": "/health"
         }
     
