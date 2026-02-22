@@ -44,7 +44,7 @@ class BaseModel(ABC):
     #     pass
     
     @abstractmethod
-    def preprocess(self, image: Image.Image) -> torch.Tensor:
+    def preprocess(self, image: Image.Image) -> tuple[torch.Tensor, ...]:
         """Preprocess image for model input.
         
         Args:
@@ -56,7 +56,7 @@ class BaseModel(ABC):
         pass
     
     @abstractmethod
-    def predict(self, input_tensor: torch.Tensor) -> torch.Tensor:
+    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> torch.Tensor:
         """Run model inference.
         
         Args:
