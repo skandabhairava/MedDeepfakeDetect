@@ -36,7 +36,7 @@ export interface AnalysisResponse {
 	inference_time: number;
 	device: string;
 	authenticity: {
-		is_authentic: boolean;
+		is_real: boolean;
 		confidence: number;
 		prediction: string;
 	};

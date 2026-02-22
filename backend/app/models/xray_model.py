@@ -150,7 +150,7 @@ class KneeXRayModel(BaseModel):
         magnitude = np.abs(fft_shift)
         log_magnitude = np.log(magnitude + 1)
         return log_magnitude
-    
+
     def preprocess(self, image: Image.Image) -> tuple[torch.Tensor, ...]:
         """Preprocess X-ray image.
         
@@ -176,11 +176,11 @@ class KneeXRayModel(BaseModel):
         freq = freq / (freq.max() + 1e-8)
         
         # To tensor
-        img = torch.tensor(img, dtype=torch.float32).unsqueeze(0)  # [1, H, W]
-        freq = torch.tensor(freq, dtype=torch.float32).unsqueeze(0)  # [1, H, W]
+        img = torch.tensor(img, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # [1, H, W]
+        freq = torch.tensor(freq, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # [1, H, W]
         
         return img, freq
-    
+
     def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> torch.Tensor:
         """Run model inference.
         
@@ -194,7 +194,7 @@ class KneeXRayModel(BaseModel):
             authenticity_logits, _ = self.model(*input_tensors)
             # return torch.cat([authenticity_logits, arthritis_logits], dim=1)
             return authenticity_logits
-    
+
     def postprocess(self, output: torch.Tensor) -> Dict[str, Any]:
         """Postprocess model output.
         

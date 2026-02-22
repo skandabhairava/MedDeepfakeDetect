@@ -182,7 +182,7 @@
 					<div>
 						<p class="text-sm text-gray-600">Authentic</p>
 						<p class="text-xl font-bold text-green-600">
-							{analyses.filter(a => a.results.authenticity.is_authentic).length}
+							{analyses.filter(a => a.results.authenticity.is_real).length}
 						</p>
 					</div>
 				</div>
@@ -196,7 +196,7 @@
 					<div>
 						<p class="text-sm text-gray-600">Suspicious</p>
 						<p class="text-xl font-bold text-red-600">
-							{analyses.filter(a => !a.results.authenticity.is_authentic).length}
+							{analyses.filter(a => !a.results.authenticity.is_real).length}
 						</p>
 					</div>
 				</div>
@@ -301,12 +301,21 @@
 								<div class="flex items-center space-x-2">
 									{#if displayData.showAuthenticity}
 										<svelte:component 
-											this={getAuthenticityIcon(analysis.results?.authenticity?.is_authentic)} 
-											class="w-5 h-5 {getAuthenticityColor(analysis.results?.authenticity?.is_authentic)}"
+											this={getAuthenticityIcon(analysis.results?.authenticity?.is_real)} 
+											class="w-5 h-5 {getAuthenticityColor(analysis.results?.authenticity?.is_real)}"
 										/>
-										<span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_authentic)}">
+										{#if analysis.results?.authenticity?.removed_injected}
+											<span class="text-sm font-medium text-green-600">
+												{analysis.results?.authenticity?.removed_injected}
+											</span>
+										{:else}
+											<span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_real)}">
+												{analysis.results?.authenticity?.is_real ? 'Authentic' : 'Synthetic'}
+											</span>
+										{/if}
+										<!-- <span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_authentic)}">
 											{analysis.results?.authenticity?.is_authentic ? 'Authentic' : 'Suspicious'}
-										</span>
+										</span> -->
 									{:else}
 										<div class="text-sm text-gray-500">
 											{displayData.message}

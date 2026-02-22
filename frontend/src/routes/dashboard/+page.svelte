@@ -77,7 +77,7 @@
 					<div>
 						<p class="text-sm font-medium text-gray-600">Authentic Images</p>
 						<p class="text-2xl font-bold text-green-600">
-							{recentAnalyses.filter(a => a.results.authenticity.is_authentic).length}
+							{recentAnalyses.filter(a => a.results.authenticity.is_real).length}
 						</p>
 					</div>
 					<div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -91,7 +91,7 @@
 					<div>
 						<p class="text-sm font-medium text-gray-600">Suspicious Images</p>
 						<p class="text-2xl font-bold text-red-600">
-							{recentAnalyses.filter(a => !a.results.authenticity.is_authentic).length}
+							{recentAnalyses.filter(a => !a.results.authenticity.is_real).length}
 						</p>
 					</div>
 					<div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -167,8 +167,8 @@
 							<div class="flex items-center justify-between">
 								<div class="flex items-center space-x-3">
 									<svelte:component 
-										this={getAuthenticityIcon(analysis.results.authenticity.is_authentic)} 
-										class="w-5 h-5 {getAuthenticityColor(analysis.results.authenticity.is_authentic)}"
+										this={getAuthenticityIcon(analysis.results.authenticity.is_real)} 
+										class="w-5 h-5 {getAuthenticityColor(analysis.results.authenticity.is_real)}"
 									/>
 									<div>
 										<p class="font-medium text-gray-900">{analysis.filename}</p>
@@ -181,9 +181,15 @@
 									<p class="text-sm font-medium {getConfidenceColor(analysis.results.authenticity.confidence)}">
 										{(analysis.results.authenticity.confidence * 100).toFixed(1)}% confidence
 									</p>
-									<p class="text-xs text-gray-500">
-										{analysis.results.authenticity.is_authentic ? 'Authentic' : 'Suspicious'}
-									</p>
+									{#if analysis.results.authenticity.removed_injected}
+										<p class="text-xs text-gray-500">
+											{analysis.results.authenticity.removed_injected}
+										</p>
+									{:else}
+										<p class="text-xs text-gray-500">
+											{analysis.results.authenticity.is_real ? 'Authentic' : 'Suspicious'}
+										</p>
+									{/if}
 								</div>
 							</div>
 						</div>

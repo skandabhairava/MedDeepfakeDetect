@@ -80,7 +80,7 @@
 	async function startAnalysis() {
 		if (!selectedFile || !analysisName.trim()) return;
 
-		console.log('Starting analysis...', { selectedFile: !!selectedFile, analysisName, analysisType });
+		// console.log('Starting analysis...', { selectedFile: !!selectedFile, analysisName, analysisType });
 		
 		isAnalyzing = true;
 		analysisResult = null;
@@ -95,21 +95,21 @@
 				queueSubmissionResult = await analyzeCTScan(selectedFile, analysisName.trim());
 			}
 			
-			console.log('Analysis result:', queueSubmissionResult);
+			// console.log('Analysis result:', queueSubmissionResult);
 			
 			// Handle rate limiting response
 			if (queueSubmissionResult && !queueSubmissionResult.success && queueSubmissionResult.error === 'rate_limited') {
-				console.log('Rate limited:', queueSubmissionResult);
+				// console.log('Rate limited:', queueSubmissionResult);
 				isRateLimited = true;
 				rateLimitWaitTime = queueSubmissionResult.wait_time || config.analysis.statusPollInterval / 1000;
 				startRateLimitCountdown();
 			} else if (queueSubmissionResult && queueSubmissionResult.success) {
-				console.log('Analysis submitted successfully:', queueSubmissionResult);
+				// console.log('Analysis submitted successfully:', queueSubmissionResult);
 				// Start status polling for successful submission
 				startStatusPolling(queueSubmissionResult.history_id);
 			}
 		} catch (error) {
-			console.error('Analysis error:', error);
+			// console.error('Analysis error:', error);
 			addToast({
 				type: 'error',
 				title: 'Analysis Failed',
@@ -148,25 +148,25 @@
 	});
 
 	async function startStatusPolling(historyId: number) {
-		console.log('Starting status polling for history_id:', historyId);
+		// console.log('Starting status polling for history_id:', historyId);
 		
 		if (statusPollInterval) {
 			clearInterval(statusPollInterval);
 		}
 		
 		statusPollInterval = setInterval(async () => {
-			console.log('Polling status for history_id:', historyId);
-			console.log('Poll count:', ++pollCount);
-			console.log('Current statusPollInterval ID:', statusPollInterval);
+			// console.log('Polling status for history_id:', historyId);
+			// console.log('Poll count:', ++pollCount);
+			// console.log('Current statusPollInterval ID:', statusPollInterval);
 			
 			try {
-				console.log('Making API call to getAnalysisStatus...');
+				// console.log('Making API call to getAnalysisStatus...');
 				const statusResult = await getAnalysisStatus(historyId);
-				console.log('Status result:', statusResult);
+				// console.log('Status result:', statusResult);
 				
 				if (statusResult && statusResult.success) {
 					const status = statusResult.status;
-					console.log('Current analysis status:', status);
+					// console.log('Current analysis status:', status);
 					
 					// Update queue position if still pending
 					if (status.status === 'pending' && status.queue_position > 0) {
@@ -178,8 +178,8 @@
 					
 					// Stop polling if analysis is completed or failed
 					if (status.status === 'completed' || status.status === 'failed') {
-						console.log('Analysis status changed:', status.status, 'Setting analysisResult:', status.status === 'completed' ? status : null);
-						console.log('Clearing interval:', statusPollInterval);
+						// console.log('Analysis status changed:', status.status, 'Setting analysisResult:', status.status === 'completed' ? status : null);
+						// console.log('Clearing interval:', statusPollInterval);
 						clearInterval(statusPollInterval);
 						statusPollInterval = null;
 						
@@ -187,7 +187,7 @@
 						if (status.status === 'completed') {
 							// Parse the JSON string results from backend
 							analysisResult = typeof status.results === 'string' ? JSON.parse(status.results) : status.results;
-							console.log('analysisResult set to:', analysisResult);
+							// console.log('analysisResult set to:', analysisResult);
 						}
 						
 						// Show completion notification
@@ -206,16 +206,16 @@
 						}
 					}
 				} else {
-					console.log('Status result failed or missing:', statusResult);
+					// console.log('Status result failed or missing:', statusResult);
 				}
 			} catch (error) {
-				console.error('Error polling analysis status:', error);
-				console.error('Error details:', error.message, error.stack);
+				// console.error('Error polling analysis status:', error);
+				// console.error('Error details:', error.message, error.stack);
 			}
 		}, config.analysis.statusPollInterval);
 		
-		console.log('Status polling interval set to:', config.analysis.statusPollInterval, 'ms');
-		console.log('Final statusPollInterval ID:', statusPollInterval);
+		// console.log('Status polling interval set to:', config.analysis.statusPollInterval, 'ms');
+		// console.log('Final statusPollInterval ID:', statusPollInterval);
 	}
 
 	function getAuthenticityIcon(analysisResult: any) {
@@ -304,10 +304,9 @@
 		<div class="card mb-6">
 			<h2 class="text-lg font-semibold text-gray-900 mb-4">Upload Image</h2>
 			
-			<!-- Debug Info -->
-			<div class="text-xs text-gray-500 mb-4">
+			<!-- <div class="text-xs text-gray-500 mb-4">
 				DEBUG: selectedFile={!!selectedFile}, analysisName="{analysisName}", queueResult={!!queueSubmissionResult}, analysisResult={!!analysisResult}
-			</div>
+			</div> -->
 			
 			{#if !selectedFile}
 				<div
@@ -454,9 +453,15 @@
 									<div class="w-8 h-8 {getAuthenticityColor(analysisResult)} rounded-full flex items-center justify-center">
 										<svelte:component this={getAuthenticityIcon(analysisResult)} class="w-4 h-4" />
 									</div>
-									<span class="text-sm font-medium {getAuthenticityColor(analysisResult)}">
-										{analysisResult.authenticity.is_real ? 'Authentic' : 'Synthetic'}
-									</span>
+									{#if analysisResult.authenticity.removed_injected}
+										<span class="text-sm font-medium text-green-600">
+											{analysisResult.authenticity.removed_injected}
+										</span>
+									{:else}
+										<span class="text-sm font-medium {getAuthenticityColor(analysisResult)}">
+											{analysisResult.authenticity.is_real ? 'Authentic' : 'Synthetic'}
+										</span>
+									{/if}
 								</div>
 							</div>
 						</div>
