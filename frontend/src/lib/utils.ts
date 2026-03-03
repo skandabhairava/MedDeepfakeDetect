@@ -29,17 +29,3 @@ export function getConfidenceColor(confidence: number): string {
 	if (confidence >= 0.6) return 'text-yellow-600';
 	return 'text-red-600';
 }
-
-export function getArthritisSeverityColor(severity: string): string {
-	switch (severity.toLowerCase()) {
-		case 'normal':
-		case 'mild':
-			return 'text-green-600';
-		case 'moderate':
-			return 'text-yellow-600';
-		case 'severe':
-			return 'text-red-600';
-		default:
-			return 'text-gray-600';
-	}
-}

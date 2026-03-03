@@ -6,6 +6,7 @@ from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.models as models
 from typing import Any, Dict
+from torch.nn import functional as F
 
 from .base import BaseModel
 
@@ -124,7 +125,22 @@ class CTScanModel(BaseModel):
         self.model = self.model.to(self.device) 
         
         self.model.eval()
+
+        self.gradients = None
+        self.activations = None
+
+        target_layer = self.model.spatial.features.denseblock3#.denselayer16.conv2
+
+        target_layer.register_forward_hook(self.save_activation)
+        target_layer.register_full_backward_hook(self.save_gradient)
+
         self.logger.info("CT model loaded successfully")
+
+    def save_activation(self, module, input, output):
+        self.activations = output.detach()
+
+    def save_gradient(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0].detach()
 
     def generate_radon(self, image: np.ndarray):
         theta = np.linspace(0.0, 180.0, max(image.shape), endpoint=False)
@@ -167,7 +183,7 @@ class CTScanModel(BaseModel):
         
         return tensor, tensor_srm, tensor_radon
     
-    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> torch.Tensor:
+    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> tuple[torch.Tensor]:
         """Run model inference.
         
         Args:
@@ -176,12 +192,12 @@ class CTScanModel(BaseModel):
         Returns:
             Model output tensor
         """
-        with torch.no_grad():
-            # Mock inference with some randomness
-            output = self.model(*input_tensors)
-            return output
-    
-    def postprocess(self, output: torch.Tensor) -> Dict[str, Any]:
+        self.model.zero_grad()
+        # with torch.no_grad():
+        output = self.model(*input_tensors)
+        return (output,)
+
+    def postprocess(self, output: tuple[torch.Tensor, ...]) -> tuple[Dict[str, Any], np.ndarray]:
         """Postprocess model output.
         
         Args:
@@ -191,25 +207,43 @@ class CTScanModel(BaseModel):
             Processed results dictionary
         """
         # Convert logit to probability
-        idx2label = ["Deepfake - Removed", "Real", "Deepfake - Injected"]
+        idx2label = ["Synthetic - Removed", "Authentic", "Synthetic - Injected"]
 
-        preds = output.argmax(dim=1)
-        probs = torch.softmax(output, dim=1)
+        out_logit = output[0]
+
+        preds = out_logit.argmax(dim=1)
+        probs = torch.softmax(out_logit, dim=1)
         confidence = probs[0, preds].item()
 
         pred_output = preds[0].item()
-        # pred_string = idx2label[pred_output] # pyright: ignore[reportArgumentType, reportCallIssue]
         
         # Determine authenticity (real if prob > 0.5)
         is_real = pred_output == 1
+
+        # calc score backwards, to get gradients for gradcam
+        score = out_logit[0, preds]
+        score.backward()
+
+        # Grad-CAM++: Alpha weighting
+        gradients = self.gradients
+        activations = self.activations
+
+        alpha = gradients.pow(2)
+        alpha = alpha / (2 * alpha + (activations * gradients.pow(3)).sum(dim=(2,3), keepdim=True) + 1e-8)
+        weights = (alpha * F.relu(gradients)).sum(dim=(2,3), keepdim=True) # type: ignore
+
+        cam: np.ndarray = (weights * activations).sum(dim=1, keepdim=True)
+        cam = F.relu(cam).squeeze().cpu().numpy()
+        cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
+        # return cam, preds.item(), confidence
         
         results = {
             "authenticity": {
                 "is_real": is_real,
                 "confidence": round(confidence, 3),
-                "removed_injected": idx2label[pred_output] # pyright: ignore[reportArgumentType, reportCallIssue] 
+                "prediction": idx2label[pred_output] # pyright: ignore[reportArgumentType, reportCallIssue] 
             },
             "scan_type": "CT",
         }
         
-        return results
+        return results, cam

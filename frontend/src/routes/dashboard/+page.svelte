@@ -26,6 +26,8 @@
 	async function loadRecentAnalyses() {
 		isLoading = true;
 		const history = await getAnalysisHistory(1, 5);
+		console.log(history);
+		
 		if (history) {
 			recentAnalyses = history.history;
 		}
@@ -181,9 +183,9 @@
 									<p class="text-sm font-medium {getConfidenceColor(analysis.results.authenticity.confidence)}">
 										{(analysis.results.authenticity.confidence * 100).toFixed(1)}% confidence
 									</p>
-									{#if analysis.results.authenticity.removed_injected}
+									{#if analysis.results.authenticity.prediction}
 										<p class="text-xs text-gray-500">
-											{analysis.results.authenticity.removed_injected}
+											{analysis.results.authenticity.prediction}
 										</p>
 									{:else}
 										<p class="text-xs text-gray-500">

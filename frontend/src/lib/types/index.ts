@@ -38,15 +38,15 @@ export interface AnalysisResponse {
 	authenticity: {
 		is_real: boolean;
 		confidence: number;
-		prediction: string;
+		prediction?: string;
 	};
 	arthritis?: {
 		severity: string;
 		confidence: number;
-		classification: string;
+		// classification: string;
 	};
 	scan_type?: string;
-	gradcam?: string; // Base64 encoded GradCAM image
+	gradcam_base64?: string; // Base64 encoded GradCAM image
 	error?: string;
 }
 

@@ -9,6 +9,7 @@ class GradCAMPlusPlus:
     def __init__(self, model: torch.nn.Module, target_layer: torch.nn.Module):
         self.model = model
         self.target_layer = target_layer
+        
         self.gradients = None
         self.activations = None
         target_layer.register_forward_hook(self.save_activation)

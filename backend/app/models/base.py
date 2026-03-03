@@ -1,5 +1,6 @@
 """Base model interface for medical image analysis."""
-
+import base64
+from io import BytesIO
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 import time
@@ -7,9 +8,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 import torch
+import cv2
 
 from ..core.logging import get_logger
-from ..utils import model_utils
+# from ..utils import model_utils
 
 
 class BaseModel(ABC):
@@ -56,7 +58,7 @@ class BaseModel(ABC):
         pass
     
     @abstractmethod
-    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> torch.Tensor:
+    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> tuple[torch.Tensor, ...]:
         """Run model inference.
         
         Args:
@@ -68,7 +70,7 @@ class BaseModel(ABC):
         pass
     
     @abstractmethod
-    def postprocess(self, output: torch.Tensor) -> Dict[str, Any]:
+    def postprocess(self, output: tuple[torch.Tensor, ...]) -> tuple[Dict[str, Any], np.ndarray]:
         """Postprocess model output.
         
         Args:
@@ -78,6 +80,13 @@ class BaseModel(ABC):
             Processed results dictionary
         """
         pass
+
+    @staticmethod
+    def generate_overlay(spatial_np, cam2_resized) -> np.ndarray:
+        heatmap = cv2.applyColorMap(np.uint8(255 * cam2_resized), cv2.COLORMAP_JET)
+        heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB) / 255.0
+        overlay = np.clip(0.6 * spatial_np[..., None] + 0.4 * heatmap, 0, 1)
+        return overlay
     
     def analyze(self, image_path: str) -> Dict[str, Any]:
         """Complete analysis pipeline.
@@ -95,20 +104,39 @@ class BaseModel(ABC):
             image = self._load_image(image_path)
             
             # Preprocess
-            input_tensor = self.preprocess(image)
+            input_tensors = self.preprocess(image)
             
             # Predict
-            output = self.predict(input_tensor)
+            output = self.predict(input_tensors)
             
             # Postprocess
-            results = self.postprocess(output)
-            
+            results, cam = self.postprocess(output)
+
+            # generate CAM image
+            spatial = input_tensors[0] #0th is always spatial
+            # spatial_vis = spatial.unsqueeze(0).to(self.device)
+
+            spatial_vis = cv2.resize(spatial.detach().numpy().squeeze(), (128, 128))
+
+            cam_resized = cv2.resize(cam, (128, 128))
+            overlay = self.generate_overlay(spatial_vis, cam_resized)
+            overlay_uint8 = (overlay * 255).round().astype(np.uint8)
+            pil_img = Image.fromarray(overlay_uint8)
+
+            buffer = BytesIO()
+            pil_img.save(buffer, format='PNG')
+            buffer.seek(0)
+
+            # Encode to base64 and return as string
+            gradcam_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
             # Add metadata
             inference_time = time.time() - start_time
             results.update({
                 "model_name": self.model_name,
                 "inference_time": round(inference_time, 3),
                 "device": self.device,
+                "gradcam_base64": gradcam_base64,
                 "status": "success"
             })
             
@@ -128,6 +156,7 @@ class BaseModel(ABC):
                 error=str(e),
                 image_path=image_path
             )
+            # raise e
             return {
                 "model_name": self.model_name,
                 "status": "error",

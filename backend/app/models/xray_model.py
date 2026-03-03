@@ -1,11 +1,12 @@
 """Knee X-ray authenticity and arthritis classification model."""
 
-import random
+# import random
+from torch.nn import functional as F
 from typing import Any, Dict
 import torch
 import torch.nn as nn
 from PIL import Image
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
 
 from .base import BaseModel
 
@@ -93,7 +94,7 @@ class MultiTaskDualDomainDetector(nn.Module):
             nn.Linear(128, num_kl_classes)
         )
     
-    def forward(self, spatial, freq):
+    def forward(self, spatial, freq) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.cat([spatial, freq], dim=1)
         feat_map = self.backbone(x)
         feat_vec = self.gap(feat_map).flatten(1)
@@ -138,9 +139,22 @@ class KneeXRayModel(BaseModel):
         self.model = MultiTaskDualDomainDetector()
         self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
         self.model.to(self.device)
-        
         self.model.eval()
+        
+        self.gradients = None
+        self.activations = None
+
+        target_layer = self.model.backbone.features[-1]
+        target_layer.register_forward_hook(self.save_activation)
+        target_layer.register_full_backward_hook(self.save_gradient)
+
         self.logger.info("Model loaded successfully")
+
+    def save_activation(self, module, input, output):
+        self.activations = output.detach()
+
+    def save_gradient(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0].detach()
 
     @staticmethod
     def _compute_fft_features(img):
@@ -181,7 +195,7 @@ class KneeXRayModel(BaseModel):
         
         return img, freq
 
-    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> torch.Tensor:
+    def predict(self, input_tensors: tuple[torch.Tensor, ...]) -> tuple[torch.Tensor, torch.Tensor]:
         """Run model inference.
         
         Args:
@@ -190,12 +204,14 @@ class KneeXRayModel(BaseModel):
         Returns:
             Model output tensor
         """
-        with torch.no_grad():
-            authenticity_logits, _ = self.model(*input_tensors)
-            # return torch.cat([authenticity_logits, arthritis_logits], dim=1)
-            return authenticity_logits
+        self.model.zero_grad()
+        # with torch.no_grad():
+        authenticity_logits, arthritis_logits = self.model(*input_tensors)
 
-    def postprocess(self, output: torch.Tensor) -> Dict[str, Any]:
+        # return torch.cat([authenticity_logits, arthritis_logits], dim=1)
+        return authenticity_logits, arthritis_logits
+
+    def postprocess(self, output: tuple[torch.Tensor, ...]) -> tuple[Dict[str, Any], np.ndarray]:
         """Postprocess model output.
         
         Args:
@@ -205,15 +221,34 @@ class KneeXRayModel(BaseModel):
             Processed results dictionary
         """
         # Split outputs
-        # authenticity_logit = output[0, 0]
-        # arthritis_logits = output[0, 1:]
-        authenticity_logit = output
+        authenticity_logit = output[0]
+        arthritis_logits = output[1]
+        # authenticity_logit = output
         
         # Convert to probabilities
         authenticity_prob = torch.sigmoid(authenticity_logit).item()
-        # arthritis_probs = torch.softmax(arthritis_logits, dim=0).cpu().numpy()
-        
-        # Determine authenticity (real if prob > 0.5)
+
+        arthritis_probs = torch.softmax(arthritis_logits, dim=0)
+        arthritis_pred_class = arthritis_logits.argmax(dim=1)
+        arthritis_confidence = arthritis_probs[0, arthritis_pred_class].item()
+
+        score = authenticity_logit
+        score.backward()
+
+        # Grad-CAM++: Alpha weighting
+        gradients = self.gradients
+        activations = self.activations
+
+        alpha = gradients.pow(2)
+        alpha = alpha / (2 * alpha + (activations * gradients.pow(3)).sum(dim=(2,3), keepdim=True) + 1e-8)
+        weights = (alpha * F.relu(gradients)).sum(dim=(2,3), keepdim=True)
+
+        cam = (weights * activations).sum(dim=1, keepdim=True)
+        cam = F.relu(cam).squeeze().cpu().numpy()
+        cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
+        # return cam, pred_class.item(), confidence
+
+        # Determine authenticity (real if prob < 0.5)
         is_real = authenticity_prob <= 0.5
         confidence = authenticity_prob if authenticity_prob > 0.5 else 1 - authenticity_prob #max(authenticity_prob, 1 - authenticity_prob)
         
@@ -222,30 +257,22 @@ class KneeXRayModel(BaseModel):
             "authenticity": {
                 "is_real": is_real,
                 "confidence": round(confidence, 3),
-                "raw_probability": round(authenticity_prob, 3)
-            }
+            },
+            "scan_type": "XRAY"
         }
         
         # Add arthritis classification if image is real
-        # if is_real:
-        #     arthritis_class = int(torch.argmax(arthritis_logits).item())
-        #     arthritis_confidence = float(arthritis_probs[arthritis_class])
+        if is_real:
+            arthritis_class = f"{(int(arthritis_pred_class.item())/5) * 100}%"
+            # arthritis_confidence = float(arthritis_probs[arthritis_class])
             
-        #     results["arthritis"] = {
-        #         "severity": self.arthritis_labels[arthritis_class],
-        #         "class_id": arthritis_class,
-        #         "confidence": round(arthritis_confidence, 3),
-        #         "probabilities": {
-        #             label: round(float(prob), 3)
-        #             for label, prob in zip(self.arthritis_labels, arthritis_probs)
-        #         }
-        #     }
-        # else:
-        #     results["arthritis"] = {
-        #         "probabilities": {
-        #             label: round(float(prob), 3)
-        #             for label, prob in zip(self.arthritis_labels, arthritis_probs)
-        #         }
-        #     }
-        
-        return results
+            results["arthritis"] = {
+                "severity": arthritis_class,
+                "confidence": round(arthritis_confidence, 3)
+                # "probabilities": {
+                #     label: round(float(prob), 3)
+                #     for label, prob in zip(self.arthritis_labels, arthritis_probs)
+                # }
+            }
+
+        return results, cam

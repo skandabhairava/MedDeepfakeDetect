@@ -34,6 +34,9 @@
 	async function loadHistory() {
 		isLoading = true;
 		const history = await getAnalysisHistory(currentPage, pageSize);
+
+		console.log(history);
+
 		if (history) {
 			analyses = history.history;
 			totalItems = history.total;
@@ -45,6 +48,7 @@
 	async function refreshHistory() {
 		isRefreshing = true;
 		const history = await getAnalysisHistory(currentPage, pageSize);
+		console.log(history);
 		if (history) {
 			analyses = history.history;
 			totalItems = history.total;
@@ -66,20 +70,6 @@
 
 	function getAuthenticityColor(isAuthentic: boolean) {
 		return isAuthentic ? 'text-green-600' : 'text-red-600';
-	}
-
-	function getArthritisSeverityColor(severity: string) {
-		switch (severity.toLowerCase()) {
-			case 'normal':
-			case 'mild':
-				return 'text-green-600';
-			case 'moderate':
-				return 'text-yellow-600';
-			case 'severe':
-				return 'text-red-600';
-			default:
-				return 'text-gray-600';
-		}
 	}
 
 	function isPendingAnalysis(analysis: any) {
@@ -115,6 +105,7 @@
 	function openGradcamModal(gradcamBase64: string) {
 		selectedGradcam = gradcamBase64;
 		showGradcamModal = true;
+		console.log(gradcamBase64);
 	}
 
 	function closeModals() {
@@ -304,18 +295,15 @@
 											this={getAuthenticityIcon(analysis.results?.authenticity?.is_real)} 
 											class="w-5 h-5 {getAuthenticityColor(analysis.results?.authenticity?.is_real)}"
 										/>
-										{#if analysis.results?.authenticity?.removed_injected}
-											<span class="text-sm font-medium text-green-600">
-												{analysis.results?.authenticity?.removed_injected}
+										{#if analysis.results?.authenticity?.prediction}
+											<span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_real)}">
+												{analysis.results?.authenticity?.prediction}
 											</span>
 										{:else}
 											<span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_real)}">
 												{analysis.results?.authenticity?.is_real ? 'Authentic' : 'Synthetic'}
 											</span>
 										{/if}
-										<!-- <span class="text-sm font-medium {getAuthenticityColor(analysis.results?.authenticity?.is_authentic)}">
-											{analysis.results?.authenticity?.is_authentic ? 'Authentic' : 'Suspicious'}
-										</span> -->
 									{:else}
 										<div class="text-sm text-gray-500">
 											{displayData.message}
@@ -336,10 +324,10 @@
 										View Image
 									</button>
 								{/if}
-								{#if analysis.results?.gradcam}
+								{#if analysis.results?.gradcam_base64}
 									<button
-										on:click={() => openGradcamModal(analysis.results.gradcam)}
-										class="btn btn-secondary btn-sm"
+										on:click={() => openGradcamModal(analysis.results.gradcam_base64)}
+										class="btn btn-secondary btn-sm flex items-center"
 										title="View GradCAM visualization"
 									>
 										<Activity class="w-4 h-4 mr-1" />
@@ -357,12 +345,12 @@
 
 							<!-- Arthritis Results -->
 							{#if displayData.showArthritis && analysis.results?.arthritis}
-								<div class="border border-gray-200 rounded-lg p-4">
+								<div class="border border-gray-200 rounded-lg p-4 mt-4 mb-4">
 									<h4 class="font-medium text-gray-900 mb-3">Arthritis Assessment</h4>
 									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
 											<p class="text-sm text-gray-600 mb-1">Severity</p>
-											<p class="text-lg font-semibold {getArthritisSeverityColor(analysis.results.arthritis.severity)}">
+											<p class="text-lg font-semibold {analysis.results.arthritis.severity}">
 												{analysis.results.arthritis.severity}
 											</p>
 										</div>
@@ -398,7 +386,7 @@
 								</div>
 							{/if}
 
-							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<div class="grid grid-cols-1 {(analysis.results.arthritis)?'md:grid-cols-4':'md:grid-cols-3'} gap-4">
 								<div>
 									<p class="text-sm text-gray-600 mb-1">Confidence</p>
 									<div class="flex items-center space-x-2">
@@ -434,16 +422,15 @@
 								{#if analysis.results.arthritis}
 									<div>
 										<p class="text-sm text-gray-600 mb-1">Arthritis Severity</p>
-										<p class="text-sm font-medium {getArthritisSeverityColor(analysis.results.arthritis.severity)}">
+										<p class="text-sm font-medium {analysis.results.arthritis.severity}">
 											{analysis.results.arthritis.severity}
 										</p>
 									</div>
-								{:else}
+								{/if}
 									<div>
 										<p class="text-sm text-gray-600 mb-1">Processing Time</p>
 										<p class="text-sm font-medium text-gray-900">{analysis.results.inference_time.toFixed(2)}s</p>
 									</div>
-								{/if}
 							</div>
 						</div>
 					{/each}
@@ -540,9 +527,9 @@
 {#if showGradcamModal && selectedGradcam}
 	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" on:click={closeModals}>
 		<div class="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto" on:click|stopPropagation>
-			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+			<div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between gap-4">
 				<h3 class="text-lg font-semibold text-gray-900">GradCAM Visualization</h3>
-				<div class="flex items-center space-x-2">
+				<div class="flex items-center">
 					<button
 						on:click={() => selectedGradcam && downloadImage(selectedGradcam, 'gradcam-visualization.png')}
 						class="btn btn-secondary btn-sm flex items-center"

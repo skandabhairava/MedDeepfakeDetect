@@ -28,6 +28,10 @@
 		goto('/login');
 	}
 
+	$: if (analysisResult) {
+		console.log(analysisResult)
+	}
+
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
 		if (target.files && target.files[0]) {
@@ -183,15 +187,12 @@
 						clearInterval(statusPollInterval);
 						statusPollInterval = null;
 						
-						// Store the completed analysis result
+						// Show completion notification
 						if (status.status === 'completed') {
 							// Parse the JSON string results from backend
 							analysisResult = typeof status.results === 'string' ? JSON.parse(status.results) : status.results;
-							// console.log('analysisResult set to:', analysisResult);
-						}
-						
-						// Show completion notification
-						if (status.status === 'completed') {
+							console.log('analysisResult set to:', analysisResult);
+
 							addToast({
 								type: 'success',
 								title: 'Analysis Complete',
@@ -224,20 +225,6 @@
 
 	function getAuthenticityColor(analysisResult: any) {
 		return analysisResult?.authenticity?.is_real ? 'text-green-600' : 'text-red-600';
-	}
-
-	function getArthritisSeverityColor(severity: string) {
-		switch (severity.toLowerCase()) {
-			case 'normal':
-			case 'mild':
-				return 'text-green-600';
-			case 'moderate':
-				return 'text-yellow-600';
-			case 'severe':
-				return 'text-red-600';
-			default:
-				return 'text-gray-600';
-		}
 	}
 </script>
 
@@ -453,9 +440,9 @@
 									<div class="w-8 h-8 {getAuthenticityColor(analysisResult)} rounded-full flex items-center justify-center">
 										<svelte:component this={getAuthenticityIcon(analysisResult)} class="w-4 h-4" />
 									</div>
-									{#if analysisResult.authenticity.removed_injected}
+									{#if analysisResult.authenticity.prediction}
 										<span class="text-sm font-medium text-green-600">
-											{analysisResult.authenticity.removed_injected}
+											{analysisResult.authenticity.prediction}
 										</span>
 									{:else}
 										<span class="text-sm font-medium {getAuthenticityColor(analysisResult)}">
@@ -474,7 +461,7 @@
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
 									<p class="text-sm text-gray-600 mb-1">Severity</p>
-									<p class="text-lg font-semibold {getArthritisSeverityColor(analysisResult.arthritis.severity)}">
+									<p class="text-lg font-semibold {analysisResult.arthritis.severity}">
 										{analysisResult.arthritis.severity}
 									</p>
 								</div>
