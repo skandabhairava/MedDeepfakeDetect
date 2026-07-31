@@ -7,7 +7,7 @@ import uuid
 
 from ..core.config import get_settings
 from ..core.logging import get_logger
-from ..models import KneeXRayModel, CTScanModel, BaseModel
+from ..models import MainModel
 
 
 class ModelService:
@@ -19,7 +19,7 @@ class ModelService:
         self.logger = get_logger("model_service")
         
         # Model registry
-        self.models: Dict[str, BaseModel] = {}
+        self.models: Dict[str, MainModel] = {}
         
         # Initialize models
         self._initialize_models()
@@ -32,13 +32,14 @@ class ModelService:
             model_dir.mkdir(exist_ok=True)
             
             # Initialize knee X-ray model
-            xray_model = KneeXRayModel(device=self.settings.device)
+            xray_model = MainModel(model_name="knee_xray_model", device=self.settings.device)
             xray_model.load_model(str(model_dir / "knee_xray_model.pth"))
             self.models["knee_xray"] = xray_model
             
             # Initialize CT scan model
-            ct_model = CTScanModel(device=self.settings.device)
-            ct_model.load_model(str(model_dir / "ct_scan_model.pth"))
+            ct_model = MainModel(model_name="ct_scan_model", device=self.settings.device)
+            # ct_model.load_model(str(model_dir / "ct_scan_model.pth"))
+            ct_model.load_model(str(model_dir / "ct_new_arch_model.pth"))
             self.models["ct_scan"] = ct_model
             
             self.logger.info("All models initialized successfully")

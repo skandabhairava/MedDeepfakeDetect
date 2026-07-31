@@ -180,6 +180,8 @@ class QueueService:
             # Update queue positions
             db.update_queue_positions()
             queue_position = db.get_queue_position(history_id)
+
+            queue_position = queue_position or 1
             
             # Create task
             task = AnalysisTask(
@@ -190,7 +192,7 @@ class QueueService:
                 name=name,
                 image_base64=image_base64,
                 temp_file_path=temp_file_path,
-                queue_position=queue_position or 1
+                queue_position=queue_position
             )
             
             # Add to queue

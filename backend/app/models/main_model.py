@@ -105,12 +105,12 @@ class MultiTaskDualDomainDetector(nn.Module):
         
         return fake_logits, kl_logits
 
-class KneeXRayModel(BaseModel):
+class MainModel(BaseModel):
     """Mock model for knee X-ray authenticity detection and arthritis classification."""
     
-    def __init__(self, device: str = "cpu"):
+    def __init__(self, model_name: str, device: str = "cpu"):
         """Initialize knee X-ray model."""
-        super().__init__("knee_xray_model", device)
+        super().__init__(model_name, device)
         
         # Define arthritis severity labels
         # self.arthritis_labels = [
@@ -251,28 +251,38 @@ class KneeXRayModel(BaseModel):
         # Determine authenticity (real if prob < 0.5)
         is_real = authenticity_prob <= 0.5
         confidence = authenticity_prob if authenticity_prob > 0.5 else 1 - authenticity_prob #max(authenticity_prob, 1 - authenticity_prob)
-        
-        # Build results
-        results = {
-            "authenticity": {
-                "is_real": is_real,
-                "confidence": round(confidence, 3),
-            },
-            "scan_type": "XRAY"
-        }
-        
-        # Add arthritis classification if image is real
-        if is_real:
-            arthritis_class = f"{(int(arthritis_pred_class.item())/5) * 100}%"
-            # arthritis_confidence = float(arthritis_probs[arthritis_class])
+
+        if self.model_name == "knee_xray_model":
+            # Build results
+            results = {
+                "authenticity": {
+                    "is_real": is_real,
+                    "confidence": round(confidence, 3),
+                },
+                "scan_type": "XRAY"
+            }
             
-            results["arthritis"] = {
-                "severity": arthritis_class,
-                "confidence": round(arthritis_confidence, 3)
-                # "probabilities": {
-                #     label: round(float(prob), 3)
-                #     for label, prob in zip(self.arthritis_labels, arthritis_probs)
-                # }
+            # Add arthritis classification if image is real
+            if is_real:
+                arthritis_class = f"{(int(arthritis_pred_class.item())/5) * 100}%"
+                # arthritis_confidence = float(arthritis_probs[arthritis_class])
+                
+                results["arthritis"] = {
+                    "severity": arthritis_class,
+                    "confidence": round(arthritis_confidence, 3)
+                    # "probabilities": {
+                    #     label: round(float(prob), 3)
+                    #     for label, prob in zip(self.arthritis_labels, arthritis_probs)
+                    # }
+                }
+        else:
+            results = {
+                "authenticity": {
+                    "is_real": is_real,
+                    "confidence": round(confidence, 3),
+                    # "prediction": idx2label[pred_output] # pyright: ignore[reportArgumentType, reportCallIssue] 
+                },
+                "scan_type": "CT",
             }
 
         return results, cam

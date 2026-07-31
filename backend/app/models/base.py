@@ -83,7 +83,7 @@ class BaseModel(ABC):
 
     @staticmethod
     def generate_overlay(spatial_np, cam2_resized) -> np.ndarray:
-        heatmap = cv2.applyColorMap(np.uint8(255 * cam2_resized), cv2.COLORMAP_JET)
+        heatmap = cv2.applyColorMap(np.uint8(255 * cam2_resized), cv2.COLORMAP_JET) # pyright: ignore[reportArgumentType, reportCallIssue]
         heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB) / 255.0
         overlay = np.clip(0.6 * spatial_np[..., None] + 0.4 * heatmap, 0, 1)
         return overlay
