@@ -125,7 +125,7 @@ npm run build
 ## Default Admin User
 
 The system comes with a default admin user for initial setup:
-- **Email**: admin@example.com
+- **Email**: admin@medicaldeepfake.com
 - **Password**: admin123
 
 > **Important**: Change the default admin password after first login for security.

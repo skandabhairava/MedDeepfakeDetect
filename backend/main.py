@@ -99,6 +99,13 @@ def create_application() -> FastAPI:
             "health": "/health"
         }
     
+    import mimetypes
+
+    mimetypes.add_type(
+        "application/manifest+json",
+        ".webmanifest"
+    )
+    
     # Serve static files (frontend build)
     frontend_build_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
     if os.path.exists(frontend_build_path):
@@ -132,7 +139,7 @@ if __name__ == "__main__":
     import uvicorn
     
     settings = get_settings()
-    
+    print(settings.host)
     uvicorn.run(
         "main:app",
         host=settings.host,
