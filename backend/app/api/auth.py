@@ -161,7 +161,28 @@ async def delete_history_item(
 
 @router.get("/users", response_model=list[UserResponse])
 async def list_users(current_user: dict = Depends(get_admin_user)) -> list[UserResponse]:
-    """List all users (admin only)."""
-    # This would require adding a list_users method to the database
-    # For now, return empty list as placeholder
-    return []
+    """List all users with their analysis counts (admin only)."""
+    users = db.list_users()
+    return [UserResponse(**u) for u in users]
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: dict = Depends(get_admin_user)
+) -> dict:
+    """Delete a user account and their analysis history (admin only)."""
+    if current_user["id"] == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account"
+        )
+    
+    success = db.delete_user(user_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {"message": "User deleted successfully"}

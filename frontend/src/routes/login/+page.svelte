@@ -133,11 +133,8 @@
 			</form>
 
 			<div class="mt-6 text-center">
-				<p class="text-gray-600">
-					Don't have an account?
-					<a href="/register" class="text-primary-600 hover:text-primary-700 font-medium">
-						Contact your administrator
-					</a>
+				<p class="text-sm text-gray-500">
+					Accounts are provisioned by administrators. Please reach out to your administrator to request access.
 				</p>
 			</div>
 		</div>

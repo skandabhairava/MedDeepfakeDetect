@@ -92,7 +92,7 @@
 				showAuthenticity: true,
 				showConfidence: true,
 				showArthritis: analysis.results?.arthritis ? true : false,
-				showGradcam: analysis.results?.gradcam ? true : false
+				showGradcam: (analysis.results?.gradcam_base64 || analysis.results?.gradcam) ? true : false
 			};
 		}
 	}
@@ -173,7 +173,7 @@
 					<div>
 						<p class="text-sm text-gray-600">Authentic</p>
 						<p class="text-xl font-bold text-green-600">
-							{analyses.filter(a => a.results.authenticity.is_real).length}
+							{analyses.filter(a => a.results?.authenticity?.is_real).length}
 						</p>
 					</div>
 				</div>
@@ -187,7 +187,7 @@
 					<div>
 						<p class="text-sm text-gray-600">Suspicious</p>
 						<p class="text-xl font-bold text-red-600">
-							{analyses.filter(a => !a.results.authenticity.is_real).length}
+							{analyses.filter(a => a.results?.authenticity && !a.results.authenticity.is_real).length}
 						</p>
 					</div>
 				</div>
@@ -324,9 +324,9 @@
 										View Image
 									</button>
 								{/if}
-								{#if analysis.results?.gradcam_base64}
+								{#if analysis.results?.gradcam_base64 || analysis.results?.gradcam}
 									<button
-										on:click={() => openGradcamModal(analysis.results.gradcam_base64)}
+										on:click={() => openGradcamModal(analysis.results.gradcam_base64 || analysis.results.gradcam)}
 										class="btn btn-secondary btn-sm flex items-center"
 										title="View GradCAM visualization"
 									>
@@ -370,12 +370,12 @@
 							{/if}
 
 							<!-- GradCAM Visualization -->
-							{#if displayData.showGradcam && analysis.results?.gradcam}
+							{#if displayData.showGradcam && (analysis.results?.gradcam_base64 || analysis.results?.gradcam)}
 								<div class="border border-gray-200 rounded-lg p-4">
 									<h4 class="font-medium text-gray-900 mb-3">GradCAM Visualization</h4>
 									<div class="border border-gray-200 rounded-lg p-4">
 										<img
-											src={`data:image/png;base64,${analysis.results.gradcam}`}
+											src={`data:image/png;base64,${analysis.results.gradcam_base64 || analysis.results.gradcam}`}
 											alt="GradCAM Visualization"
 											class="w-full h-auto"
 										/>

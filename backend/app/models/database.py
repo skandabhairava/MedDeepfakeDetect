@@ -133,6 +133,40 @@ class Database:
                 return dict(row)
             return None
     
+    def list_users(self) -> List[Dict[str, Any]]:
+        """List all users with their analysis counts."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT 
+                    u.id, 
+                    u.account_name, 
+                    u.email, 
+                    u.is_admin, 
+                    u.created_at,
+                    COUNT(a.id) AS analyses_count
+                FROM users u
+                LEFT JOIN analysis_history a ON a.user_id = u.id
+                GROUP BY u.id
+                ORDER BY u.created_at DESC
+                """
+            )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+
+    def delete_user(self, user_id: int) -> bool:
+        """Delete a user and their associated analysis history."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM analysis_history WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            conn.commit()
+            deleted = cursor.rowcount > 0
+            if deleted:
+                logger.info(f"Deleted user ID: {user_id}")
+            return deleted
+    
     def update_user_password(self, user_id: int, new_password_hash: str) -> bool:
         """Update user password."""
         with self.get_connection() as conn:

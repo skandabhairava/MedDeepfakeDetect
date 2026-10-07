@@ -8,7 +8,7 @@
 	let showUserMenu = false;
 
 	$: currentPath = $page.url.pathname;
-	$: isAuthPage = currentPath === '/login' || currentPath === '/register';
+	$: isAuthPage = currentPath === '/login';
 
 	function handleLogout() {
 		logout();
@@ -40,7 +40,7 @@
 					<a
 						href="/dashboard"
 						class="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors"
-						class:bg-primary-50={currentPath === '/'}
+						class:bg-primary-50={currentPath === '/dashboard'}
 					>
 						Dashboard
 					</a>
@@ -128,9 +128,9 @@
 				<div class="md:hidden border-t border-gray-200 py-4">
 					<div class="flex flex-col space-y-2">
 						<a
-							href="/"
+							href="/dashboard"
 							class="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium"
-							class:bg-primary-50={currentPath === '/'}
+							class:bg-primary-50={currentPath === '/dashboard'}
 							on:click={closeMenus}
 						>
 							Dashboard

@@ -26,6 +26,7 @@ class UserResponse(BaseModel):
     email: str
     is_admin: bool
     created_at: datetime
+    analyses_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

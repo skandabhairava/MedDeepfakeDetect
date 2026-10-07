@@ -1,14 +1,6 @@
 <script lang="ts">
-	// import { goto } from '$app/navigation';
-	// import { isAuthenticated } from '$lib/stores/auth';
-	// import { onMount } from 'svelte';
+	import { isAuthenticated } from '$lib/stores/auth';
 	import { Shield, Brain, Activity, TrendingUp } from 'lucide-svelte';
-
-	// onMount(() => {
-	// 	if ($isAuthenticated) {
-	// 		goto('/dashboard');
-	// 	}
-	// });
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center px-4">
@@ -76,11 +68,8 @@
 		</div>
 
 		<div class="text-center">
-			<a href="/login" class="btn btn-primary text-lg px-8 py-3 mr-4">
+			<a href={$isAuthenticated ? "/dashboard" : "/login"} class="btn btn-primary text-lg px-8 py-3">
 				Get Started
-			</a>
-			<a href="#features" class="btn btn-secondary text-lg px-8 py-3">
-				Learn More
 			</a>
 		</div>
 	</div>

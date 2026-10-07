@@ -8,6 +8,7 @@
 	import { config } from '$lib/config';
 	import { onDestroy } from 'svelte';
 	import { Upload, X, Loader2, Image, Brain, Activity, Clock, ExternalLink, TrendingUp } from 'lucide-svelte';
+	import type { QueueSubmissionResponse } from '$lib/types';
 
 	let selectedFile: File | null = null;
 	let analysisType: 'xray' | 'ct' = 'xray';
@@ -15,8 +16,8 @@
 	let analysisResult: any = null;
 	let dragOver = false;
 	let analysisName: string = '';
-	let queueSubmissionResult = null;
-	let statusPollInterval: NodeJS.Timeout | null = null;
+	let queueSubmissionResult: QueueSubmissionResponse | null = null;
+	let statusPollInterval: ReturnType<typeof setInterval> | null = null;
 	let isRateLimited = false;
 	let rateLimitWaitTime = 0;
 	let pollCount = 0;
@@ -107,7 +108,7 @@
 				isRateLimited = true;
 				rateLimitWaitTime = queueSubmissionResult.wait_time || config.analysis.statusPollInterval / 1000;
 				startRateLimitCountdown();
-			} else if (queueSubmissionResult && queueSubmissionResult.success) {
+			} else if (queueSubmissionResult && queueSubmissionResult.success && queueSubmissionResult.history_id) {
 				// console.log('Analysis submitted successfully:', queueSubmissionResult);
 				// Start status polling for successful submission
 				startStatusPolling(queueSubmissionResult.history_id);
@@ -136,7 +137,9 @@
 			rateLimitWaitTime = remainingTime;
 			
 			if (remainingTime <= 0) {
-				clearInterval(statusPollInterval);
+				if (statusPollInterval) {
+					clearInterval(statusPollInterval);
+				}
 				statusPollInterval = null;
 				isRateLimited = false;
 				rateLimitWaitTime = 0;
@@ -173,10 +176,10 @@
 					// console.log('Current analysis status:', status);
 					
 					// Update queue position if still pending
-					if (status.status === 'pending' && status.queue_position > 0) {
+					if (status.status === 'pending' && (status.queue_position ?? 0) > 0) {
 						if (queueSubmissionResult) {
 							queueSubmissionResult.queue_position = status.queue_position;
-							queueSubmissionResult.estimated_wait_time = status.queue_position * 30;
+							queueSubmissionResult.estimated_wait_time = (status.queue_position ?? 1) * 30;
 						}
 					}
 					
@@ -184,7 +187,9 @@
 					if (status.status === 'completed' || status.status === 'failed') {
 						// console.log('Analysis status changed:', status.status, 'Setting analysisResult:', status.status === 'completed' ? status : null);
 						// console.log('Clearing interval:', statusPollInterval);
-						clearInterval(statusPollInterval);
+						if (statusPollInterval) {
+							clearInterval(statusPollInterval);
+						}
 						statusPollInterval = null;
 						
 						// Show completion notification
@@ -401,7 +406,9 @@
 							</div>
 							<div>
 								<p class="font-medium text-blue-900">Your analysis is in the queue</p>
+								{#if queueSubmissionResult.queue_position && queueSubmissionResult.estimated_wait_time}
 								<p class="text-sm text-blue-700">Position: {queueSubmissionResult.queue_position} • Estimated wait: {Math.round(queueSubmissionResult.estimated_wait_time / 60)} minutes</p>
+								{/if}
 								{#if statusPollInterval}
 									<p class="text-xs text-blue-600 mt-1">
 										<Loader2 class="w-3 h-3 inline animate-spin mr-1" />
@@ -481,12 +488,12 @@
 					{/if}
 
 					<!-- GradCAM Visualization -->
-					{#if analysisResult.gradcam}
+					{#if analysisResult.gradcam_base64 || analysisResult.gradcam}
 						<div class="border border-gray-200 rounded-lg p-4 mb-6">
 							<h4 class="font-medium text-gray-900 mb-3">GradCAM Visualization</h4>
 							<div class="border border-gray-200 rounded-lg p-4">
 								<img
-									src={`data:image/png;base64,${analysisResult.gradcam}`}
+									src={`data:image/png;base64,${analysisResult.gradcam_base64 || analysisResult.gradcam}`}
 									alt="GradCAM Visualization"
 									class="w-full h-auto"
 								/>

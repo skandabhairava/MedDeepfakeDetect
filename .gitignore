@@ -4,4 +4,4 @@ node_modules
 __pycache__
 build/
 medical_deepfake.db
-*.pth
+*.pthbackend/Archive.zip

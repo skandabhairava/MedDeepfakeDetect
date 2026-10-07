@@ -4,6 +4,7 @@ export interface User {
 	email: string;
 	is_admin: boolean;
 	created_at: string;
+	analyses_count?: number;
 }
 
 export interface AuthResponse {
@@ -78,10 +79,12 @@ export interface ApiResponse<T> {
 export interface QueueSubmissionResponse {
 	success: boolean;
 	message: string;
-	history_id: number;
-	status: string;
-	queue_position: number;
-	estimated_wait_time: number;
+	history_id?: number;
+	status?: string;
+	queue_position?: number;
+	estimated_wait_time?: number;
+	error?: string;
+	wait_time?: number;
 }
 
 export interface AnalysisStatusResponse {

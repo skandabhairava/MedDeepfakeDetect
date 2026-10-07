@@ -8,6 +8,7 @@
 	import { Activity, TrendingUp, Clock, FileImage, RefreshCw } from 'lucide-svelte';
 
 	let recentAnalyses: any[] = [];
+	let totalAnalyses = 0;
 	let isLoading = true;
 	let isRefreshing = false;
 
@@ -26,10 +27,10 @@
 	async function loadRecentAnalyses() {
 		isLoading = true;
 		const history = await getAnalysisHistory(1, 5);
-		console.log(history);
 		
 		if (history) {
 			recentAnalyses = history.history;
+			totalAnalyses = history.total;
 		}
 		isLoading = false;
 	}
@@ -39,6 +40,7 @@
 		const history = await getAnalysisHistory(1, 5);
 		if (history) {
 			recentAnalyses = history.history;
+			totalAnalyses = history.total;
 		}
 		isRefreshing = false;
 	}
@@ -66,7 +68,7 @@
 				<div class="flex items-center justify-between">
 					<div>
 						<p class="text-sm font-medium text-gray-600">Total Analyses</p>
-						<p class="text-2xl font-bold text-gray-900">{recentAnalyses.length}</p>
+						<p class="text-2xl font-bold text-gray-900">{totalAnalyses}</p>
 					</div>
 					<div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
 						<FileImage class="w-6 h-6 text-blue-600" />
@@ -77,9 +79,9 @@
 			<div class="card">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-600">Authentic Images</p>
+						<p class="text-sm font-medium text-gray-600">Recent Authentic</p>
 						<p class="text-2xl font-bold text-green-600">
-							{recentAnalyses.filter(a => a.results.authenticity.is_real).length}
+							{recentAnalyses.filter(a => a.results?.authenticity?.is_real).length}
 						</p>
 					</div>
 					<div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -91,9 +93,9 @@
 			<div class="card">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-600">Suspicious Images</p>
+						<p class="text-sm font-medium text-gray-600">Recent Suspicious</p>
 						<p class="text-2xl font-bold text-red-600">
-							{recentAnalyses.filter(a => !a.results.authenticity.is_real).length}
+							{recentAnalyses.filter(a => a.results?.authenticity && !a.results.authenticity.is_real).length}
 						</p>
 					</div>
 					<div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -169,28 +171,36 @@
 							<div class="flex items-center justify-between">
 								<div class="flex items-center space-x-3">
 									<svelte:component 
-										this={getAuthenticityIcon(analysis.results.authenticity.is_real)} 
-										class="w-5 h-5 {getAuthenticityColor(analysis.results.authenticity.is_real)}"
+										this={getAuthenticityIcon(analysis.results?.authenticity?.is_real ?? false)} 
+										class="w-5 h-5 {getAuthenticityColor(analysis.results?.authenticity?.is_real ?? false)}"
 									/>
 									<div>
-										<p class="font-medium text-gray-900">{analysis.filename}</p>
+										<p class="font-medium text-gray-900">{analysis.name || analysis.filename}</p>
 										<p class="text-sm text-gray-600">
-											{analysis.analysis_type.toUpperCase()} • {formatRelativeTime(analysis.timestamp)}
+											{analysis.analysis_type?.toUpperCase()} • {formatRelativeTime(analysis.timestamp)}
 										</p>
 									</div>
 								</div>
 								<div class="text-right">
-									<p class="text-sm font-medium {getConfidenceColor(analysis.results.authenticity.confidence)}">
-										{(analysis.results.authenticity.confidence * 100).toFixed(1)}% confidence
-									</p>
-									{#if analysis.results.authenticity.prediction}
-										<p class="text-xs text-gray-500">
-											{analysis.results.authenticity.prediction}
+									{#if analysis.results?.status === 'pending' || analysis.status === 'pending'}
+										<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+											Pending
+										</span>
+									{:else if analysis.results?.authenticity}
+										<p class="text-sm font-medium {getConfidenceColor(analysis.results.authenticity.confidence)}">
+											{(analysis.results.authenticity.confidence * 100).toFixed(1)}% confidence
 										</p>
+										{#if analysis.results.authenticity.prediction}
+											<p class="text-xs text-gray-500">
+												{analysis.results.authenticity.prediction}
+											</p>
+										{:else}
+											<p class="text-xs text-gray-500">
+												{analysis.results.authenticity.is_real ? 'Authentic' : 'Suspicious'}
+											</p>
+										{/if}
 									{:else}
-										<p class="text-xs text-gray-500">
-											{analysis.results.authenticity.is_real ? 'Authentic' : 'Suspicious'}
-										</p>
+										<span class="text-xs text-gray-500">Processed</span>
 									{/if}
 								</div>
 							</div>

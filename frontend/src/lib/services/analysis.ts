@@ -17,7 +17,7 @@ export async function analyzeXRay(file: File, name: string): Promise<QueueSubmis
 			addToast({
 				type: 'success',
 				title: 'X-ray submitted to queue',
-				message: `Position in queue: ${result.queue_position}. Estimated wait time: ${Math.round(result.estimated_wait_time / 60)} minutes`
+				message: `Position in queue: ${result.queue_position ?? 1}. Estimated wait time: ${Math.round((result.estimated_wait_time ?? 30) / 60)} minutes`
 			});
 		}
 		
@@ -59,10 +59,14 @@ export async function analyzeCTScan(file: File, name: string): Promise<QueueSubm
 		const result = await api.upload<QueueSubmissionResponse>('/analyze/ct', file, { name });
 		
 		if (result.success) {
+			let toast_est_time = '';
+			if (result.estimated_wait_time && result.queue_position){
+				toast_est_time = `Position in queue: ${result.queue_position}. Estimated wait time: ${Math.round(result.estimated_wait_time / 60)} minutes`;
+			}
 			addToast({
 				type: 'success',
 				title: 'CT scan submitted to queue',
-				message: `Position in queue: ${result.queue_position}. Estimated wait time: ${Math.round(result.estimated_wait_time / 60)} minutes`
+				message: `${toast_est_time}`
 			});
 		}
 		

@@ -124,3 +124,35 @@ export async function changePassword(passwordData: PasswordChange): Promise<bool
 		return false;
 	}
 }
+
+export async function listUsers(): Promise<User[]> {
+	try {
+		return await api.get<User[]>('/auth/users');
+	} catch (error) {
+		addToast({
+			type: 'error',
+			title: 'Failed to load users',
+			message: error instanceof Error ? error.message : 'Could not fetch user list'
+		});
+		return [];
+	}
+}
+
+export async function deleteUser(userId: number): Promise<boolean> {
+	try {
+		await api.delete(`/auth/users/${userId}`);
+		addToast({
+			type: 'success',
+			title: 'User deleted',
+			message: 'User account has been deleted successfully'
+		});
+		return true;
+	} catch (error) {
+		addToast({
+			type: 'error',
+			title: 'Failed to delete user',
+			message: error instanceof Error ? error.message : 'Could not delete user account'
+		});
+		return false;
+	}
+}
