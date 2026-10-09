@@ -57,7 +57,7 @@
 					<Brain class="w-10 h-10 text-white" />
 				</div>
 				<h2 class="text-3xl font-bold text-gray-900">Welcome Back</h2>
-				<p class="text-gray-600 mt-2">Sign in to your MedScan AI account</p>
+				<p class="text-gray-600 mt-2">Sign in to your MedVeri account</p>
 			</div>
 
 			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -132,10 +132,25 @@
 				</div>
 			</form>
 
-			<div class="mt-6 text-center">
+			<div class="mt-6 text-center space-y-3">
 				<p class="text-sm text-gray-500">
 					Accounts are provisioned by administrators. Please reach out to your administrator to request access.
 				</p>
+				<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 text-left">
+					<p class="font-semibold mb-1">Important Notice for Clinicians & Researchers:</p>
+					<p>
+						Before signing in, you must read and agree to our 
+						<a href="/terms" class="font-semibold text-primary-700 underline hover:text-primary-800">Terms of Service & Research Disclaimer</a> 
+						and 
+						<a href="/privacy" class="font-semibold text-primary-700 underline hover:text-primary-800">Privacy Policy</a>. 
+						By logging in, you confirm all patient data uploaded is de-identified and provided with required consent.
+					</p>
+				</div>
+				<div class="flex justify-center space-x-4 text-xs text-gray-500 pt-1">
+					<a href="/privacy" class="hover:text-primary-600 underline">Privacy Policy</a>
+					<span>&bull;</span>
+					<a href="/terms" class="hover:text-primary-600 underline">Terms of Service</a>
+				</div>
 			</div>
 		</div>
 	</div>

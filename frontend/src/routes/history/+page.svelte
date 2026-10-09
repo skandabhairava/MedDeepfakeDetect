@@ -346,10 +346,10 @@
 							<!-- Arthritis Results -->
 							{#if displayData.showArthritis && analysis.results?.arthritis}
 								<div class="border border-gray-200 rounded-lg p-4 mt-4 mb-4">
-									<h4 class="font-medium text-gray-900 mb-3">Arthritis Assessment</h4>
+									<h4 class="font-medium text-gray-900 mb-3">Arthritis Severity Grading (Research Benchmark)</h4>
 									<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
-											<p class="text-sm text-gray-600 mb-1">Severity</p>
+											<p class="text-sm text-gray-600 mb-1">KL Grade Severity Index (Research Benchmark)</p>
 											<p class="text-lg font-semibold {analysis.results.arthritis.severity}">
 												{analysis.results.arthritis.severity}
 											</p>
@@ -366,23 +366,9 @@
 											Classification: {analysis.results.arthritis.classification}
 										</p>
 									{/if}
-								</div>
-							{/if}
-
-							<!-- GradCAM Visualization -->
-							{#if displayData.showGradcam && (analysis.results?.gradcam_base64 || analysis.results?.gradcam)}
-								<div class="border border-gray-200 rounded-lg p-4">
-									<h4 class="font-medium text-gray-900 mb-3">GradCAM Visualization</h4>
-									<div class="border border-gray-200 rounded-lg p-4">
-										<img
-											src={`data:image/png;base64,${analysis.results.gradcam_base64 || analysis.results.gradcam}`}
-											alt="GradCAM Visualization"
-											class="w-full h-auto"
-										/>
-										<p class="text-sm text-gray-600 mt-2">
-											Areas highlighted in red indicate regions the model focused on during analysis.
-										</p>
-									</div>
+									<p class="text-[11px] text-gray-500 mt-2 italic">
+										* Model benchmark score; not a clinical Kellgren-Lawrence grade or medical diagnosis.
+									</p>
 								</div>
 							{/if}
 

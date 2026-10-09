@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     """Application settings."""
     
     # Application
-    app_name: str = Field(default="Medical Deepfake Backend", description="Application name")
+    app_name: str = Field(default="MedVeri", description="Application name")
     app_version: str = Field(default="0.1.0", description="Application version")
     debug: bool = Field(default=False, description="Debug mode")
     host: str = Field(default="0.0.0.0", description="Server host")
@@ -48,7 +48,8 @@ class Settings(BaseSettings):
     
     # Authentication
     secret_key: str = Field(default="your-secret-key-change-in-production", description="JWT secret key")
-    access_token_expire_minutes: int = Field(default=30, description="Access token expiration in minutes")
+    access_token_expire_minutes: int = Field(default=60, description="Access token expiration in minutes")
+    admin_default: str = Field(default="admin123")
     
     class Config:
         env_file = ".env"

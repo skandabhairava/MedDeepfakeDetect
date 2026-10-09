@@ -3,7 +3,7 @@ import { addToast } from '$lib/stores/toast';
 import { config } from '$lib/config';
 import type { AnalysisResponse, HistoryResponse, QueueSubmissionResponse, AnalysisStatusResponse } from '$lib/types';
 
-export async function analyzeXRay(file: File, name: string): Promise<QueueSubmissionResponse | null> {
+export async function analyzeXRay(file: File, name: string, consentConfirmed: boolean = true): Promise<QueueSubmissionResponse | null> {
 	try {
 		addToast({
 			type: 'info',
@@ -11,7 +11,7 @@ export async function analyzeXRay(file: File, name: string): Promise<QueueSubmis
 			message: 'Your X-ray is being added to the analysis queue...'
 		});
 		
-		const result = await api.upload<QueueSubmissionResponse>('/analyze/xray', file, { name });
+		const result = await api.upload<QueueSubmissionResponse>('/analyze/xray', file, { name, consent_confirmed: consentConfirmed ? 'true' : 'false' });
 		
 		if (result.success) {
 			addToast({
@@ -48,7 +48,7 @@ export async function analyzeXRay(file: File, name: string): Promise<QueueSubmis
 	}
 }
 
-export async function analyzeCTScan(file: File, name: string): Promise<QueueSubmissionResponse | null> {
+export async function analyzeCTScan(file: File, name: string, consentConfirmed: boolean = true): Promise<QueueSubmissionResponse | null> {
 	try {
 		addToast({
 			type: 'info',
@@ -56,7 +56,7 @@ export async function analyzeCTScan(file: File, name: string): Promise<QueueSubm
 			message: 'Your CT scan is being added to the analysis queue...'
 		});
 		
-		const result = await api.upload<QueueSubmissionResponse>('/analyze/ct', file, { name });
+		const result = await api.upload<QueueSubmissionResponse>('/analyze/ct', file, { name, consent_confirmed: consentConfirmed ? 'true' : 'false' });
 		
 		if (result.success) {
 			let toast_est_time = '';

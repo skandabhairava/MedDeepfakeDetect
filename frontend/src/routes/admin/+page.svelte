@@ -75,20 +75,20 @@
 	}
 
 	async function handleDeleteUser(targetUser: User) {
-		if (targetUser.id === $user?.id) {
-			addToast({
-				type: 'error',
-				title: 'Action not allowed',
-				message: 'You cannot delete your own account'
-			});
-			return;
-		}
+		const isSelf = targetUser.id === $user?.id;
+		const confirmMsg = isSelf
+			? `WARNING: You are about to permanently delete your OWN account ("${targetUser.account_name}"). All your records will be purged and you will be immediately logged out. Proceed?`
+			: `Are you sure you want to delete user "${targetUser.account_name}" (${targetUser.email})? This will permanently delete their account and analysis history.`;
 
-		if (confirm(`Are you sure you want to delete user "${targetUser.account_name}" (${targetUser.email})? This will permanently delete their account and analysis history.`)) {
+		if (confirm(confirmMsg)) {
 			deletingUserId = targetUser.id;
 			const success = await deleteUser(targetUser.id);
 			if (success) {
-				await loadUsers();
+				if (isSelf) {
+					goto('/login');
+				} else {
+					await loadUsers();
+				}
 			}
 			deletingUserId = null;
 		}
@@ -357,7 +357,7 @@
 						<ul class="text-sm text-yellow-700 space-y-1">
 							<li>• Issue strong temporary passwords</li>
 							<li>• Deleting a user permanently deletes their analysis records</li>
-							<li>• Administrators cannot delete their own active account</li>
+							<li>• Both users and administrators can delete accounts; deletion permanently purges all records</li>
 						</ul>
 					</div>
 				</div>

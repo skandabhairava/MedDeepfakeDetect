@@ -1,0 +1,71 @@
+MEDVERI - TERMS OF CONDITION & CLINICAL RESEARCH DISCLAIMER (PLAIN TEXT VERSION)
+Effective Date: October 7, 2026
+Contact: admin@medveri.xyz
+
+1. STRICTLY NON-COMMERCIAL RESEARCH TESTING PLATFORM
+The MedVeri application ("Platform") is an experimental research testing workbench developed strictly for academic, scientific, and investigational evaluation. This project is NOT for commercial usage, commercial clinical practice, private patient billing, commercial software resale, or monetization. Access is restricted to pre-authorized study investigators and clinicians participating in approved academic/scientific evaluations.
+
+Non-Commercial Scope & Research Purpose:
+- No Commercial Billing or Fees: The Platform must never be used for fee-for-service clinical billing, commercial medical practice, private patient fees, or commercial software resale.
+- Investigational Study Testbed: Access is restricted exclusively to pre-authorized study investigators, clinicians, and research collaborators participating in scientific evaluations of deepfake detection and algorithmic authenticity benchmarks.
+- Academic & Non-Profit Intent: The platform operates solely as a non-commercial scientific testbed to benchmark neural network resilience against synthetic radiological tampering.
+
+MedVeri does not provide medical diagnoses, radiological sign-offs, or clinical treatment plans. It is NOT cleared by the FDA, CE, or any health regulatory authority as Software as a Medical Device (SaMD). Inferences, authenticity probabilities, and Grad-CAM activation heatmaps are informational benchmark outputs from neural network models and must not replace human clinical expertise.
+
+2. NOT A MEDICAL DIAGNOSTIC DEVICE
+MedVeri is an investigational, experimental research tool. It is NOT approved by the FDA, CE, or any health regulatory authority as Software as a Medical Device (SaMD). Do NOT use this platform as a basis for medical/clinical diagnosis, clinical intervention, or patient treatment.
+
+3. MANDATORY SPECIALIST CONSULTATION & KNOWN LIMITATIONS
+- Neural network models are subject to errors, dataset biases, false positives (flagging genuine scans as synthetic), and false negatives (failing to identify manipulations).
+- Doctors and clinicians must NEVER rely on outputs from this platform.
+- You must ALWAYS verify all imaging with certified radiologists, specialist clinicians, and verified patient documentation.
+
+4. USER REPRESENTATIONS & PATIENT CONSENT
+By using this platform, you warrant that:
+- Patient Consent: You have obtained full informed patient consent and any required institutional/IRB ethical clearances to upload scans for research analysis.
+- De-Identification (HIPAA / GDPR): You have completely scrubbed all Protected Health Information (PHI) and Personally Identifiable Information (PII) before transmission. Scans must not contain identifiable names, social IDs, dates of birth, or legible clinical tags.
+- Authorized Professional Status: You are an authorized healthcare practitioner, researcher, academic, or medical student evaluating image authenticity under appropriate supervision.
+- Consent Collection: When you accept the Privacy Policy and these Terms during sign-in, and when you provide consent before submitting an image for analysis, the platform may record the consent timestamp, IP address, and user-agent solely to evidence consent and maintain legal/compliance records.
+
+5. NO DOCTOR-PATIENT RELATIONSHIP
+Using this Platform does not create any doctor-patient, radiologist-patient, fiduciary, or healthcare provider relationship between you (or your patients) and the platform developers, host providers, or research contributors.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6. CLINICAL & MEDICAL MALPRACTICE DISCLAIMER
+To the maximum extent permitted by applicable law, the developers, sponsors, and operators shall not be liable for any medical malpractice claims, misdiagnoses, delayed diagnoses, adverse health outcomes, patient injury, or loss of life resulting from reliance on platform predictions or Grad-CAM heatmaps. Nothing in these Terms excludes or limits liability that cannot lawfully be excluded or limited.
+
+7. DATABASE LEAK, METADATA ENCRYPTION & USER PASSWORD LIABILITY
+- Image records and study metadata (filenames, study labels) are encrypted at rest using keys derived directly from the user's password via Argon2id (AES-256-GCM).
+- The platform is designed so that protected image data and study metadata remain encrypted if the database is exposed without the corresponding password-derived decryption key.
+- If you leak, reuse, share, or fail to secure your password, or if your personal device is compromised, you bear sole responsibility. We accept NO liability for any unauthorized access resulting from compromised user credentials.
+
+8. ACCEPTABLE USE & COMMERCIAL RESTRICTIONS
+Users shall not use or deploy this system for commercial clinical billing or commercial software embedding, reverse engineer model weights, bypass rate limits, upload malicious files, or intentionally upload identifiable patient information. Violation of these terms may result in immediate account termination.
+
+9. ACCOUNT DELETION RIGHTS & LIMITED LEGAL RETENTION
+Both users (via in-app self-service Delete Account in Profile) and administrators have authority to terminate and erase accounts. Deletion removes encrypted medical scans, analysis data, account credentials, and associated encryption keys from active systems. Limited consent, security, or legal-compliance records may be retained only where reasonably necessary or required by applicable law, and backup copies may expire through the ordinary backup-retention cycle.
+
+10. HOSTING, SERVICE PROVIDERS & PRIVACY
+The platform's backend infrastructure and stored data are hosted on servers located in the European Union, using hosting and infrastructure providers acting on our behalf. Use of the platform is also subject to the Privacy Policy, which describes the data collected, international processing, service-provider processing, retention, user rights, and security practices.
+
+11. GOVERNING LAW & GRIEVANCES
+These Terms and the use of the platform are governed by applicable law. Privacy or account grievances should first be submitted using the contact address stated above. Nothing in these Terms restricts any right or remedy that cannot lawfully be waived or limited.
+
+12. CHANGES TO TERMS & CONDITIONS
+The platform may modify, update, or replace these Terms and Conditions from time to time, including at any time where reasonably necessary for legal, regulatory, security, operational, or platform-related reasons. Users are responsible for periodically reviewing the current Terms and Conditions page to remain informed of any changes. The effective date of the current version will be displayed on the Terms and Conditions page.
+Where a user continues to maintain or use an account after the effective date of an updated version of these Terms, the user will be deemed to have accepted and agreed to the updated Terms, to the maximum extent permitted by applicable law.
+A user who does not agree to an updated version may discontinue use of the platform and delete their account through the available account-deletion mechanism. Upon account deletion, the platform will delete the user's account, encrypted medical scans, analysis data, account credentials, and associated encryption keys from active systems, subject to the limited legal, security, consent, or compliance retention described in these Terms and applicable law.

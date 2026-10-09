@@ -156,3 +156,43 @@ export async function deleteUser(userId: number): Promise<boolean> {
 		return false;
 	}
 }
+
+export async function deleteCurrentAccount(): Promise<boolean> {
+	try {
+		await api.delete('/auth/me');
+		localStorage.removeItem('auth_token');
+		token.set(null);
+		user.set(null);
+		isAuthenticated.set(false);
+
+		addToast({
+			type: 'info',
+			title: 'Account deleted',
+			message: 'Your account and all associated data have been permanently deleted.'
+		});
+
+		goto('/login');
+		return true;
+	} catch (error) {
+		addToast({
+			type: 'error',
+			title: 'Account deletion failed',
+			message: error instanceof Error ? error.message : 'Could not delete your account'
+		});
+		return false;
+	}
+}
+export async function acceptStudyConsent(): Promise<boolean> {
+	try {
+		const updatedUser = await api.post<User>('/auth/study-consent', {});
+		user.set(updatedUser);
+		return true;
+	} catch (error) {
+		addToast({
+			type: 'error',
+			title: 'Consent recording failed',
+			message: error instanceof Error ? error.message : 'Could not record study agreement. Please try again.'
+		});
+		return false;
+	}
+}

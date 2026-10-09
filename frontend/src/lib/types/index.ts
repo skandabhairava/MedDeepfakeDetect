@@ -5,6 +5,7 @@ export interface User {
 	is_admin: boolean;
 	created_at: string;
 	analyses_count?: number;
+	study_consent_accepted_at?: string | null;
 }
 
 export interface AuthResponse {
@@ -59,7 +60,6 @@ export interface AnalysisHistory {
 	image_base64?: string;
 	results: AnalysisResponse;
 	timestamp: string;
-	confidence?: number;
 }
 
 export interface HistoryResponse {
@@ -96,7 +96,6 @@ export interface AnalysisStatusResponse {
 		processing_started?: string;
 		processing_completed?: string;
 		results?: AnalysisResponse;
-		confidence?: number;
 		queue_stats?: {
 			pending_count: number;
 			queue_capacity: number;

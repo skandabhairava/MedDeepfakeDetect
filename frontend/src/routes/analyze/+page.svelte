@@ -7,7 +7,7 @@
 	import { getConfidenceColor } from '$lib/utils';
 	import { config } from '$lib/config';
 	import { onDestroy } from 'svelte';
-	import { Upload, X, Loader2, Image, Brain, Activity, Clock, ExternalLink, TrendingUp } from 'lucide-svelte';
+	import { Upload, X, Loader2, Image, Brain, Activity, Clock, ExternalLink, TrendingUp, ShieldAlert } from 'lucide-svelte';
 	import type { QueueSubmissionResponse } from '$lib/types';
 
 	let selectedFile: File | null = null;
@@ -21,8 +21,9 @@
 	let isRateLimited = false;
 	let rateLimitWaitTime = 0;
 	let pollCount = 0;
+	let consentConfirmed = false;
 
-	$: startAnalysisBtnDisabled = isAnalyzing || isRateLimited || queueSubmissionResult || analysisResult || !selectedFile || !analysisName.trim();
+	$: startAnalysisBtnDisabled = isAnalyzing || isRateLimited || !!queueSubmissionResult || !!analysisResult || !selectedFile || !analysisName.trim() || !consentConfirmed;
 
 	// Redirect if not authenticated
 	$: if (!$isAuthenticated) {
@@ -32,6 +33,8 @@
 	$: if (analysisResult) {
 		console.log(analysisResult)
 	}
+
+	$: disableConsentCheck = isAnalyzing || isRateLimited || !!queueSubmissionResult || !!analysisResult || !selectedFile || !analysisName.trim()
 
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -74,6 +77,7 @@
 		analysisName = '';
 		isRateLimited = false;
 		rateLimitWaitTime = 0;
+		consentConfirmed = false;
 		
 		// Clear status polling
 		if (statusPollInterval) {
@@ -95,9 +99,9 @@
 
 		try {
 			if (analysisType === 'xray') {
-				queueSubmissionResult = await analyzeXRay(selectedFile, analysisName.trim());
+				queueSubmissionResult = await analyzeXRay(selectedFile, analysisName.trim(), consentConfirmed);
 			} else {
-				queueSubmissionResult = await analyzeCTScan(selectedFile, analysisName.trim());
+				queueSubmissionResult = await analyzeCTScan(selectedFile, analysisName.trim(), consentConfirmed);
 			}
 			
 			// console.log('Analysis result:', queueSubmissionResult);
@@ -237,8 +241,16 @@
 	<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 		<!-- Header -->
 		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-gray-900">Image Analysis</h1>
-			<p class="text-gray-600 mt-2">Upload medical images for deepfake detection and analysis</p>
+			<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<div>
+					<h1 class="text-3xl font-bold text-gray-900">Image Analysis</h1>
+					<p class="text-gray-600 mt-2">Upload medical images for deepfake detection and authenticity evaluation</p>
+				</div>
+				<div class="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300 self-start sm:self-auto shadow-sm">
+					<ShieldAlert class="w-4 h-4 mr-1.5 text-amber-700 flex-shrink-0" />
+					<span>Investigational Prototype • Non-Diagnostic</span>
+				</div>
+			</div>
 		</div>
 
 		<!-- Analysis Type Selection -->
@@ -313,12 +325,19 @@
 						Browse Files
 						<input
 							type="file"
-							accept="image/*"
+							accept="image/jpeg, .png, .jpg"
 							on:change={handleFileSelect}
 							class="hidden"
 						/>
 					</label>
 					<p class="text-sm text-gray-500 mt-4">Supports JPG, PNG formats</p>
+					<div class="mt-4 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs text-blue-900 text-left flex items-start space-x-2">
+						<ShieldAlert class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+						<p>
+							<strong>Patient Privacy Requirement:</strong> All uploaded medical images must be obtained with patient informed consent and completely de-identified (strip all PHI/PII). See our 
+							<a href="/terms" target="_blank" class="text-primary-700 underline font-medium hover:text-primary-800">Terms of Service</a>.
+						</p>
+					</div>
 				</div>
 			{:else}
 				<div class="border border-gray-200 rounded-lg p-4">
@@ -364,30 +383,59 @@
 						/>
 					</div>
 					
-					{#if !startAnalysisBtnDisabled}
-						<button
-							on:click={startAnalysis}
-							disabled={startAnalysisBtnDisabled}
-							class="btn btn-primary w-full {(startAnalysisBtnDisabled?'bg-gray-300':'')}"
-						>
-							{#if isAnalyzing}
-								<div class="flex items-center justify-center space-x-2">
-									<Loader2 class="w-5 h-5 animate-spin" />
-									<span>Analyzing...</span>
-								</div>
-							{:else if isRateLimited}
-								<div class="flex items-center justify-center space-x-2">
-									<Clock class="w-5 h-5" />
-									<span>Wait {rateLimitWaitTime}s</span>
-								</div>
-							{:else}
-								<div class="flex items-center justify-center space-x-2">
-									<Activity class="w-5 h-5" />
-									<span>Start Analysis</span>
-								</div>
-							{/if}
-						</button>
+					<!-- De-Identification Checklist & Mandatory Clickwrap Consent -->
+					<div class="mb-5 p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3">
+						<div class="flex items-start space-x-3">
+							<input
+								id="consent-checkbox"
+								type="checkbox"
+								bind:checked={consentConfirmed}
+								disabled={disableConsentCheck}
+								class="mt-1 w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer"
+							/>
+							<label for="consent-checkbox" class="text-xs text-gray-800 leading-relaxed cursor-pointer select-none">
+								<span class="font-bold text-gray-900 block mb-0.5">Mandatory Clinical Research Certification & De-Identification Warranty:</span>
+								I certify that this medical scan has been completely de-identified (containing <strong>NO</strong> patient names, hospital record numbers/MRNs, dates of birth, or burned-in annotations), that patient consent or institutional IRB authorization was obtained, and that this experimental tool will not be used as a primary diagnostic device.
+							</label>
+						</div>
+					</div>
+
+					<button
+						on:click={startAnalysis}
+						disabled={startAnalysisBtnDisabled}
+						class="btn btn-primary w-full text-base py-3 font-semibold transition-all duration-200 {startAnalysisBtnDisabled ? 'opacity-50 cursor-not-allowed bg-gray-400 hover:bg-gray-400' : 'hover:shadow-md'}"
+					>
+						{#if isAnalyzing}
+							<div class="flex items-center justify-center space-x-2">
+								<Loader2 class="w-5 h-5 animate-spin" />
+								<span>Submitting to Queue...</span>
+							</div>
+						{:else if isRateLimited}
+							<div class="flex items-center justify-center space-x-2">
+								<Clock class="w-5 h-5" />
+								<span>Rate Limited — Wait {rateLimitWaitTime}s</span>
+							</div>
+						{:else}
+							<div class="flex items-center justify-center space-x-2">
+								<Activity class="w-5 h-5" />
+								<span>Start Authenticity Analysis</span>
+							</div>
+						{/if}
+					</button>
+
+					{#if !consentConfirmed && selectedFile && analysisName.trim()}
+						<p class="text-xs text-amber-700 text-center mt-2 flex items-center justify-center space-x-1">
+							<ShieldAlert class="w-3.5 h-3.5 text-amber-600 inline mr-1 flex-shrink-0" />
+							<span>Check the de-identification certification above to enable analysis</span>
+						</p>
 					{/if}
+
+					<p class="text-xs text-gray-500 text-center mt-2">
+						By submitting, you agree to our 
+						<a href="/terms" target="_blank" class="text-primary-600 underline hover:text-primary-700">Terms of Service</a> & 
+						<a href="/privacy" target="_blank" class="text-primary-600 underline hover:text-primary-700">Privacy Policy</a>. Research Use Only.
+					</p>
+
 				</div>
 			{/if}
 		</div>
@@ -422,11 +470,20 @@
 			{:else if analysisResult}
 				<!-- Analysis Results -->
 				<div class="card animate-slide-up">
-					<h2 class="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
+					<h2 class="text-lg font-semibold text-gray-900 mb-2">Analysis Results</h2>
+
+					<!-- Mandatory Statutory Non-Diagnostic Disclaimer Strip -->
+					<div class="mb-5 p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 flex items-start space-x-2.5">
+						<ShieldAlert class="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+						<div class="leading-relaxed">
+							<strong>Investigational Model Benchmark — Non-Diagnostic Output:</strong>
+							These outputs are experimental algorithmic predictions for scientific evaluation only and do <strong>not</strong> constitute medical diagnoses or treatment recommendations. Clinical decisions must not be based on these results.
+						</div>
+					</div>
 					
 					<!-- Authenticity Results -->
 					<div class="border border-gray-200 rounded-lg p-4 mb-6">
-						<h4 class="font-medium text-gray-900 mb-3">Authenticity Assessment</h4>
+						<h4 class="font-medium text-gray-900 mb-3">Authenticity Signal (Research Benchmark)</h4>
 						<div class="flex items-center space-x-3">
 							<div>
 								<p class="text-sm text-gray-600 mb-1">Authenticity Confidence</p>
@@ -464,10 +521,10 @@
 					<!-- Arthritis Results -->
 					{#if analysisResult.arthritis}
 						<div class="border border-gray-200 rounded-lg p-4 mb-6">
-							<h4 class="font-medium text-gray-900 mb-3">Arthritis Assessment</h4>
+							<h4 class="font-medium text-gray-900 mb-3">Arthritis Severity Grading (Research Benchmark)</h4>
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
-									<p class="text-sm text-gray-600 mb-1">Severity</p>
+									<p class="text-sm text-gray-600 mb-1">KL Grade Severity Index (Research Benchmark)</p>
 									<p class="text-lg font-semibold {analysisResult.arthritis.severity}">
 										{analysisResult.arthritis.severity}
 									</p>
@@ -484,13 +541,16 @@
 									Classification: {analysisResult.arthritis.classification}
 								</p>
 							{/if}
+							<p class="text-[11px] text-gray-500 mt-2.5 italic">
+								* Value represents an experimental downstream model benchmark score, not a clinical Kellgren-Lawrence grade or medical diagnosis.
+							</p>
 						</div>
 					{/if}
 
 					<!-- GradCAM Visualization -->
 					{#if analysisResult.gradcam_base64 || analysisResult.gradcam}
 						<div class="border border-gray-200 rounded-lg p-4 mb-6">
-							<h4 class="font-medium text-gray-900 mb-3">GradCAM Visualization</h4>
+							<h4 class="font-medium text-gray-900 mb-3">GradCAM Visualization (Research Use Only)</h4>
 							<div class="border border-gray-200 rounded-lg p-4">
 								<img
 									src={`data:image/png;base64,${analysisResult.gradcam_base64 || analysisResult.gradcam}`}

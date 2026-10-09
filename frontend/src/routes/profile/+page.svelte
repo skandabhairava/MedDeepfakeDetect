@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { user, isAuthenticated } from '$lib/stores/auth';
-	import { changePassword } from '$lib/services/auth';
+	import { changePassword, deleteCurrentAccount } from '$lib/services/auth';
 	import { addToast } from '$lib/stores/toast';
 	import { formatTimeForUser, formatRelativeTime } from '$lib/utils/timezone';
-	import { User, Mail, Calendar, Shield, Eye, EyeOff, Loader2 } from 'lucide-svelte';
+	import { User, Mail, Calendar, Shield, Eye, EyeOff, Loader2, FileText, Lock, Trash2, AlertTriangle, X } from 'lucide-svelte';
 
 	let currentPassword = '';
 	let newPassword = '';
@@ -14,9 +14,48 @@
 	let showNewPassword = false;
 	let showConfirmPassword = false;
 
+	// Account deletion state & safeguards
+	let showDeleteModal = false;
+	let deleteConfirmationText = '';
+	let isDeletingAccount = false;
+	let confirmUnderstandPurge = false;
+	let confirmUnderstandIrreversible = false;
+	let confirmSelfDeleteIntent = false;
+
+	$: canSubmitDelete = confirmUnderstandPurge &&
+		confirmUnderstandIrreversible &&
+		confirmSelfDeleteIntent &&
+		deleteConfirmationText.trim().toLowerCase() === 'delete my account';
+
 	// Redirect if not authenticated
 	$: if (!$isAuthenticated) {
 		goto('/login');
+	}
+
+	function openDeleteModal() {
+		showDeleteModal = true;
+		deleteConfirmationText = '';
+		confirmUnderstandPurge = false;
+		confirmUnderstandIrreversible = false;
+		confirmSelfDeleteIntent = false;
+	}
+
+	async function handleDeleteAccount() {
+		if (!canSubmitDelete) {
+			addToast({
+				type: 'warning',
+				title: 'Safeguards required',
+				message: 'Please check all 3 safeguard boxes and type "delete my account" to confirm'
+			});
+			return;
+		}
+
+		isDeletingAccount = true;
+		const success = await deleteCurrentAccount();
+		isDeletingAccount = false;
+		if (success) {
+			showDeleteModal = false;
+		}
 	}
 
 	async function handlePasswordChange() {
@@ -277,7 +316,181 @@
 						</div>
 					</div>
 				</div>
+
+				<!-- Legal & Compliance Policies -->
+				<div class="card mt-6">
+					<h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+						<FileText class="w-5 h-5 text-primary-600" />
+						<span>Legal & Compliance Policies</span>
+					</h3>
+					<p class="text-sm text-gray-600 mb-4">
+						Review our research platform terms, clinical disclaimers, and data protection policies:
+					</p>
+					<div class="space-y-3">
+						<a
+							href="/privacy"
+							class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors group"
+						>
+							<div class="flex items-center space-x-3">
+								<Lock class="w-4 h-4 text-gray-500 group-hover:text-primary-600" />
+								<div>
+									<p class="text-sm font-medium text-gray-900 group-hover:text-primary-600">Privacy Policy</p>
+									<p class="text-xs text-gray-500">Data encryption, patient consent rules, and data retention</p>
+								</div>
+							</div>
+							<span class="text-xs font-medium text-primary-600">&rarr;</span>
+						</a>
+
+						<a
+							href="/terms"
+							class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors group"
+						>
+							<div class="flex items-center space-x-3">
+								<Shield class="w-4 h-4 text-gray-500 group-hover:text-primary-600" />
+								<div>
+									<p class="text-sm font-medium text-gray-900 group-hover:text-primary-600">Terms of Service & Research Disclaimer</p>
+									<p class="text-xs text-gray-500">Non-diagnostic use disclaimer and liability terms</p>
+								</div>
+							</div>
+							<span class="text-xs font-medium text-primary-600">&rarr;</span>
+						</a>
+					</div>
+				</div>
+
+				<!-- Danger Zone: Account Deletion (Self-Service & Admin Deletion) -->
+				<div class="card mt-6 border-red-200 bg-red-50/40">
+					<h3 class="text-lg font-semibold text-red-900 mb-2 flex items-center space-x-2">
+						<Trash2 class="w-5 h-5 text-red-600" />
+						<span>Danger Zone</span>
+					</h3>
+					<p class="text-xs text-red-700 mb-4 leading-relaxed">
+						Permanently delete your account and all associated data. You can self-delete your account at any time, and administrators can also delete accounts. All your encrypted scans, Grad-CAM heatmaps, credentials, and analysis history will be permanently erased. This action cannot be undone.
+					</p>
+					<button
+						type="button"
+						on:click={openDeleteModal}
+						class="btn bg-white hover:bg-red-50 text-red-600 border border-red-300 text-sm font-semibold flex items-center space-x-2"
+					>
+						<Trash2 class="w-4 h-4 text-red-600" />
+						<span>Delete My Account</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
+
+<!-- Delete Account Confirmation Modal -->
+{#if showDeleteModal}
+	<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+		<div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 animate-slide-up space-y-4">
+			<div class="flex items-start justify-between">
+				<div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-red-600 flex-shrink-0">
+					<AlertTriangle class="w-6 h-6" />
+				</div>
+				<button
+					type="button"
+					on:click={() => (showDeleteModal = false)}
+					class="text-gray-400 hover:text-gray-600"
+					disabled={isDeletingAccount}
+				>
+					<X class="w-5 h-5" />
+				</button>
+			</div>
+
+			<div>
+				<h3 class="text-lg font-bold text-gray-900">Permanently Delete Account?</h3>
+				<p class="text-sm text-gray-600 mt-2">
+					This action is <strong>immediate and irreversible</strong>. Your account, encrypted medical imagery, and analysis records will be permanently purged from the database.
+				</p>
+			</div>
+
+			<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 space-y-1">
+				<p class="font-semibold">Compliance Note (Apple 5.1.1(v) & GDPR Art. 17):</p>
+				<p>Users and administrators both possess deletion rights. Your encryption key is immediately evicted from memory and all stored ciphertext is destroyed.</p>
+			</div>
+
+			<!-- Required Safeguard Checkmarks -->
+			<div class="space-y-2.5 p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800">
+				<p class="font-bold text-gray-900 mb-1">Required Safeguard Confirmations:</p>
+
+				<label class="flex items-start space-x-2.5 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={confirmUnderstandPurge}
+						class="mt-0.5 w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500 cursor-pointer flex-shrink-0"
+						disabled={isDeletingAccount}
+					/>
+					<span class="leading-relaxed">
+						I understand that deleting my account permanently erases all my encrypted medical scans, Grad-CAM visualizations, and analysis history.
+					</span>
+				</label>
+
+				<label class="flex items-start space-x-2.5 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={confirmUnderstandIrreversible}
+						class="mt-0.5 w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500 cursor-pointer flex-shrink-0"
+						disabled={isDeletingAccount}
+					/>
+					<span class="leading-relaxed">
+						I understand that this action is immediate, final, and cannot be undone by administrators or support.
+					</span>
+				</label>
+
+				<label class="flex items-start space-x-2.5 cursor-pointer">
+					<input
+						type="checkbox"
+						bind:checked={confirmSelfDeleteIntent}
+						class="mt-0.5 w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500 cursor-pointer flex-shrink-0"
+						disabled={isDeletingAccount}
+					/>
+					<span class="leading-relaxed">
+						I confirm that I want to permanently delete my account and forfeit all access to this research testbed.
+					</span>
+				</label>
+			</div>
+
+			<div>
+				<label for="delete_confirm_input" class="block text-xs font-medium text-gray-700 mb-1">
+					Type <span class="font-bold text-red-600">delete my account</span> to confirm:
+				</label>
+				<input
+					id="delete_confirm_input"
+					type="text"
+					bind:value={deleteConfirmationText}
+					placeholder="delete my account"
+					class="input text-sm border-red-300 focus:border-red-500 focus:ring-red-500"
+					disabled={isDeletingAccount}
+				/>
+			</div>
+
+			<div class="flex items-center space-x-3 pt-2">
+				<button
+					type="button"
+					on:click={() => (showDeleteModal = false)}
+					class="btn btn-secondary flex-1"
+					disabled={isDeletingAccount}
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					on:click={handleDeleteAccount}
+					class="btn bg-red-600 hover:bg-red-700 text-white flex-1 font-semibold flex items-center justify-center space-x-2"
+					disabled={!canSubmitDelete || isDeletingAccount}
+				>
+					{#if isDeletingAccount}
+						<Loader2 class="w-4 h-4 animate-spin" />
+						<span>Deleting...</span>
+					{:else}
+						<Trash2 class="w-4 h-4" />
+						<span>Confirm Delete</span>
+					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+

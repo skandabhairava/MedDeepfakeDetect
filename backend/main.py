@@ -145,5 +145,9 @@ if __name__ == "__main__":
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
-        log_level=settings.log_level.lower()
+        log_level=settings.log_level.lower(),
+        # Respect X-Forwarded-* headers when behind Caddy
+        proxy_headers=True,
+        # Trust forwarded headers only when they come from localhost (Caddy)
+        forwarded_allow_ips="127.0.0.1",
     )

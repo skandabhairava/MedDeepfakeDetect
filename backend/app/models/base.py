@@ -116,12 +116,83 @@ class BaseModel(ABC):
             spatial = input_tensors[0] #0th is always spatial
             # spatial_vis = spatial.unsqueeze(0).to(self.device)
 
-            spatial_vis = cv2.resize(spatial.detach().numpy().squeeze(), (128, 128))
-
-            cam_resized = cv2.resize(cam, (128, 128))
+            # Generate CAM image at high resolution (512x512) for clarity
+            spatial_vis = cv2.resize(spatial.detach().numpy().squeeze(), (512, 512))
+            cam_resized = cv2.resize(cam, (512, 512))
             overlay = self.generate_overlay(spatial_vis, cam_resized)
             overlay_uint8 = (overlay * 255).round().astype(np.uint8)
             pil_img = Image.fromarray(overlay_uint8)
+
+            # --- Statutory Watermark (proportionally scaled in top-right corner) ---
+            try:
+                import os
+                from PIL import ImageDraw, ImageFont
+
+                img_w, img_h = pil_img.size
+                lines = [
+                    "For Research & Investigational Use Only",
+                    "Not for Diagnostic Procedures"
+                ]
+
+                # Find available TrueType font for clean anti-aliased rendering
+                font_path = None
+                for p in [
+                    "/usr/share/fonts/google-carlito-fonts/Carlito-Bold.ttf",
+                    "/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf"
+                ]:
+                    if os.path.exists(p):
+                        font_path = p
+                        break
+
+                target_badge_w = int(img_w * 0.34)
+                font = None
+                if font_path:
+                    for sz in range(max(9, int(img_w * 0.035)), 6, -1):
+                        f = ImageFont.truetype(font_path, sz)
+                        w = max(f.getbbox(l)[2] - f.getbbox(l)[0] for l in lines)
+                        if w <= target_badge_w:
+                            font = f
+                            break
+                if font is None:
+                    font = ImageFont.load_default()
+
+                # Calculate dimensions
+                bboxes = [font.getbbox(l) for l in lines]
+                max_text_w = max(b[2] - b[0] for b in bboxes)
+                line_h = max(b[3] - b[1] for b in bboxes)
+                line_spacing = max(1, int(line_h * 0.2))
+
+                pad_x = max(5, int(img_w * 0.012))
+                pad_y = max(3, int(img_h * 0.008))
+
+                badge_w = max_text_w + 2 * pad_x
+                badge_h = len(lines) * line_h + (len(lines) - 1) * line_spacing + 2 * pad_y
+
+                margin = max(6, int(img_w * 0.015))
+                x1 = img_w - margin
+                x0 = x1 - badge_w
+                y0 = margin
+                y1 = y0 + badge_h
+
+                # Semi-transparent dark pill box in top-right corner
+                bg_overlay = Image.new("RGBA", pil_img.size, (0, 0, 0, 0))
+                bg_draw = ImageDraw.Draw(bg_overlay)
+                radius = max(2, int(badge_h * 0.15))
+                bg_draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=(0, 0, 0, 175))
+
+                pil_rgba = pil_img.convert("RGBA")
+                pil_rgba = Image.alpha_composite(pil_rgba, bg_overlay)
+                text_draw = ImageDraw.Draw(pil_rgba)
+
+                for i, line in enumerate(lines):
+                    lx = x0 + pad_x
+                    ly = y0 + pad_y + i * (line_h + line_spacing)
+                    text_draw.text((lx, ly), line, fill=(255, 255, 240, 240), font=font)
+
+                pil_img = pil_rgba.convert("RGB")
+            except Exception as wm_err:
+                self.logger.warning(f"Could not apply GradCAM watermark: {wm_err}")
+            # --- End watermark ---
 
             buffer = BytesIO()
             pil_img.save(buffer, format='PNG')

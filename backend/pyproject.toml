@@ -3,7 +3,7 @@ name = "medical-deepfake-backend"
 version = "0.1.0"
 description = "Medical image authenticity analysis backend"
 authors = [
-    {name = "Medical Deepfake Team", email = "team@medicaldeepfake.com"}
+    {name = "Medical Deepfake Team", email = "admin@medveri.xyz"}
 ]
 dependencies = [
     "fastapi>=0.104.0",
@@ -23,6 +23,8 @@ dependencies = [
     "opencv-python>=4.8.0",
     "email-validator>=2.0.0",
     "scikit-image>=0.26.0",
+    "cryptography>=42.0.0",
+    "argon2-cffi>=23.1.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"

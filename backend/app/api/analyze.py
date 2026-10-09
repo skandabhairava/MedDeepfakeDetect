@@ -5,7 +5,7 @@ import base64
 from datetime import datetime
 from typing import Dict
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -14,6 +14,7 @@ from ..core.logging import get_logger, log_request_info
 from ..schemas import AnalysisResponse
 from ..services import ModelService, queue_service
 from ..services.auth import auth_service
+from ..services.encryption import encryption_service
 from ..models.database import db
 from ..utils import (
     FileValidationError,
@@ -40,18 +41,35 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     return user
 
 
+def get_current_consented_user(current_user: dict = Depends(get_current_user)) -> dict:
+    """Validate that the authenticated user has signed the mandatory initial Study Agreement.
+
+    If study_consent_accepted_at is NULL, access to analysis features is strictly forbidden.
+    """
+    if not current_user.get("study_consent_accepted_at"):
+        raise HTTPException(
+            status_code=403,
+            detail="Study Agreement Required: You must review and accept the mandatory Study Agreement and de-identification warranty before accessing analysis features."
+        )
+    return current_user
+
+
 @router.post("/xray")
 async def analyze_xray(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     name: str = Form(...),
-    current_user: dict = Depends(get_current_user)
+    consent_confirmed: bool = Form(True),
+    current_user: dict = Depends(get_current_consented_user)
 ) -> Dict:
     """Analyze knee X-ray image for authenticity and arthritis severity.
     
     Args:
         background_tasks: FastAPI background tasks
         file: Uploaded X-ray image file
+        name: Analysis study label
+        consent_confirmed: Mandatory clinician de-identification certification
         current_user: Authenticated user
         
     Returns:
@@ -60,6 +78,12 @@ async def analyze_xray(
     Raises:
         HTTPException: If file validation or queue submission fails
     """
+    if not consent_confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail="Patient consent and de-identification certification are mandatory."
+        )
+
     request_id = f"xray_{int(time.time())}"
     start_time = time.time()
     
@@ -102,14 +126,19 @@ async def analyze_xray(
         # Validate and save uploaded file
         temp_file_path = save_upload_file(file)
         
-        # Submit to queue
+        # Submit to queue with consent audit confirmation
+        ip_addr = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
         queue_result = queue_service.submit_analysis(
             user_id=current_user["id"],
             analysis_type="xray",
             filename=file.filename,
             name=name,
             image_base64=image_base64,
-            temp_file_path=temp_file_path
+            temp_file_path=temp_file_path,
+            consent_confirmed=consent_confirmed,
+            consent_ip_addr=ip_addr,
+            consent_usr_agent=user_agent
         )
         
         logger.info(
@@ -151,6 +180,9 @@ async def analyze_xray(
                 "request_id": request_id
             }
         )
+
+    except HTTPException:
+        raise
         
     except Exception as e:
         # Clean up file if it exists
@@ -179,13 +211,16 @@ async def analyze_ct_scan(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     name: str = Form(...),
-    current_user: dict = Depends(get_current_user)
+    consent_confirmed: bool = Form(True),
+    current_user: dict = Depends(get_current_consented_user)
 ) -> Dict:
     """Analyze CT scan image for authenticity.
     
     Args:
         background_tasks: FastAPI background tasks
         file: Uploaded CT scan image file
+        name: Analysis study label
+        consent_confirmed: Mandatory clinician de-identification certification
         current_user: Authenticated user
         
     Returns:
@@ -194,6 +229,12 @@ async def analyze_ct_scan(
     Raises:
         HTTPException: If file validation or queue submission fails
     """
+    if not consent_confirmed:
+        raise HTTPException(
+            status_code=400,
+            detail="Patient consent and de-identification certification are mandatory."
+        )
+
     request_id = f"ct_{int(time.time())}"
     start_time = time.time()
     
@@ -236,14 +277,15 @@ async def analyze_ct_scan(
         # Validate and save uploaded file
         temp_file_path = save_upload_file(file)
         
-        # Submit to queue
+        # Submit to queue with consent audit confirmation
         queue_result = queue_service.submit_analysis(
             user_id=current_user["id"],
             analysis_type="ct",
             filename=file.filename,
             name=name,
             image_base64=image_base64,
-            temp_file_path=temp_file_path
+            temp_file_path=temp_file_path,
+            consent_confirmed=consent_confirmed
         )
         
         logger.info(
@@ -285,6 +327,9 @@ async def analyze_ct_scan(
                 "request_id": request_id
             }
         )
+
+    except HTTPException:
+        raise
         
     except Exception as e:
         # Clean up file if it exists
@@ -311,7 +356,7 @@ async def analyze_ct_scan(
 @router.get("/status/{history_id}")
 async def get_analysis_status(
     history_id: int,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_consented_user)
 ) -> Dict:
     """Get analysis status by history ID.
     
@@ -359,17 +404,51 @@ async def get_analysis_status(
         if status_info["status"] == "pending":
             queue_stats = queue_service.get_queue_stats()
             status_info["queue_stats"] = queue_stats
-        
+
+        # Decrypt gradcam_base64 in completed results
+        if status_info["status"] == "completed":
+            results = status_info.get("results")
+            if isinstance(results, str):
+                import json as _json
+                results = _json.loads(results)
+                status_info["results"] = results
+            if isinstance(results, dict) and results.get("gradcam_base64"):
+                key = auth_service.get_cached_key(current_user["id"])
+                if key:
+                    try:
+                        results["gradcam_base64"] = encryption_service.decrypt(
+                            results["gradcam_base64"], key
+                        )
+                    except ValueError:
+                        logger.warning(
+                            f"Failed to decrypt gradcam_base64 in status for "
+                            f"history {history_id}"
+                        )
+                        results["gradcam_base64"] = None
+                else:
+                    logger.warning(
+                        f"No cached key for user {current_user['id']}; "
+                        "forcing re-login (encryption_key_expired)."
+                    )
+                    from fastapi import status as http_status
+                    raise HTTPException(
+                        status_code=http_status.HTTP_401_UNAUTHORIZED,
+                        detail={
+                            "message": "Your session encryption key has expired. Please log in again.",
+                            "error_code": "encryption_key_expired",
+                        },
+                    )
+
         return {
             "success": True,
             "status": status_info
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting analysis status {history_id}: {str(e)}")
-        
+
         raise HTTPException(
             status_code=500,
             detail={

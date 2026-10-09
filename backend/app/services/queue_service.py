@@ -10,10 +10,13 @@ from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor, Future
 from dataclasses import dataclass
 
+from fastapi import HTTPException
+
 from ..core.config import get_settings
 from ..core.logging import get_logger
 from ..models.database import db
 from ..services.model_service import ModelService
+from ..services.encryption import encryption_service
 from ..utils import cleanup_temp_file
 
 
@@ -35,6 +38,7 @@ class AnalysisTask:
     image_base64: str
     temp_file_path: str
     queue_position: int
+    user_key: Optional[bytes] = None  # AES-256 key from session cache; None → skip encrypt
 
 
 class QueueService:
@@ -126,15 +130,24 @@ class QueueService:
             else:
                 raise ValueError(f"Unknown analysis type: {task.analysis_type}")
             
+            # Encrypt gradcam_base64 inside results (if key available)
+            if task.user_key and "gradcam_base64" in results and results["gradcam_base64"]:
+                try:
+                    results["gradcam_base64"] = encryption_service.encrypt(
+                        results["gradcam_base64"], task.user_key
+                    )
+                except Exception as enc_err:
+                    self.logger.error(
+                        f"Failed to encrypt gradcam_base64 for analysis {task.id}: {enc_err}"
+                    )
+
             # Update status to completed
             processing_completed = datetime.now(timezone.utc).isoformat()
-            confidence = results.get("confidence")
             
             db.update_analysis_status(
                 task.id,
                 AnalysisStatus.COMPLETED.value,
                 results=results,
-                confidence=confidence,
                 processing_completed=processing_completed
             )
             
@@ -160,18 +173,86 @@ class QueueService:
                 self.logger.error(f"Error cleaning up temp file {task.temp_file_path}: {str(e)}")
     
     def submit_analysis(self, user_id: int, analysis_type: str, filename: str, name: str,
-                       image_base64: str, temp_file_path: str) -> Dict[str, Any]:
-        """Submit analysis request to queue."""
+                       image_base64: str, temp_file_path: str,
+                       consent_confirmed: bool = True, consent_ip_addr: None|str=None, consent_usr_agent: str|None=None) -> Dict[str, Any]:
+        """Submit analysis request to queue.
+
+        The caller's AES key is fetched from the session cache and used to
+        encrypt ``image_base64`` before it is written to the database.  The
+        same key is snapshotted into the :class:`AnalysisTask` so the
+        background worker can encrypt the ``gradcam_base64`` after inference.
+        """
         try:
-            # Add to database with pending status
+            # Enforce study agreement feature lock
+            user = db.get_user_by_id(user_id)
+            if not user or not user.get("study_consent_accepted_at"):
+                self.logger.warning(
+                    f"User {user_id} attempted analysis without signing initial study agreement"
+                )
+                raise HTTPException(
+                    status_code=403,
+                    detail="Study Agreement Required: You must review and accept the mandatory Study Agreement and de-identification warranty before submitting analyses."
+                )
+
+            # Fetch the user's AES key from the session cache
+            # Import here to avoid circular import at module level
+            from ..services.auth import auth_service
+            user_key = auth_service.get_cached_key(user_id)
+
+            from fastapi import status as http_status
+            if user_key is None:
+                self.logger.warning(
+                    f"No cached encryption key for user {user_id}"
+                )
+                raise HTTPException(
+                    status_code=http_status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "message": "Encryption session expired. Please re-authenticate to encrypt analysis data.",
+                        "error_code": "encryption_key_expired"
+                    }
+                )
+
+            # Encrypt image_base64 before DB write
+            encrypted_image = image_base64
+
+            try:
+                encrypted_image = encryption_service.encrypt(image_base64, user_key)
+            except Exception as enc_err:
+                self.logger.error(
+                    f"Failed to encrypt image_base64 for user {user_id}: {enc_err}"
+                )
+                raise HTTPException(
+                    status_code=http_status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Failed to encrypt image. Please retry later."
+                )
+
+            # Encrypt filename and name metadata (may contain PHI identifiers)
+            encrypted_filename = filename
+            encrypted_name = name
+            try:
+                encrypted_filename = encryption_service.encrypt(filename, user_key)
+                encrypted_name = encryption_service.encrypt(name, user_key)
+            except Exception as enc_err:
+                self.logger.error(
+                    f"Failed to encrypt metadata for user {user_id}: {enc_err}"
+                )
+                raise HTTPException(
+                    status_code=http_status.HTTP_401_UNAUTHORIZED,
+                    detail="Failed to encrypt metadata. Please retry later."
+                )
+
+            # Add to database with pending status and consent audit flag
             history_id = db.add_analysis_history(
                 user_id=user_id,
                 analysis_type=analysis_type,
-                filename=filename,
-                name=name,
-                image_base64=image_base64,
+                filename=encrypted_filename,
+                name=encrypted_name,
+                image_base64=encrypted_image,
                 results={"status": "pending", "message": "Waiting in queue"},
-                status=AnalysisStatus.PENDING.value
+                status=AnalysisStatus.PENDING.value,
+                consent_confirmed=consent_confirmed,
+                consent_ip_addr=consent_ip_addr,
+                consent_usr_agent=consent_usr_agent
             )
             
             # Update user's last analysis time
@@ -183,16 +264,18 @@ class QueueService:
 
             queue_position = queue_position or 1
             
-            # Create task
+            # Create task — pass the original (plaintext) image for model inference
+            # and the key so the worker can encrypt gradcam after inference
             task = AnalysisTask(
                 id=history_id,
                 user_id=user_id,
                 analysis_type=analysis_type,
                 filename=filename,
                 name=name,
-                image_base64=image_base64,
+                image_base64=image_base64,  # plaintext; only used for model processing
                 temp_file_path=temp_file_path,
-                queue_position=queue_position
+                queue_position=queue_position,
+                user_key=user_key
             )
             
             # Add to queue
@@ -208,7 +291,9 @@ class QueueService:
                 "queue_position": queue_position,
                 "estimated_wait_time": queue_position * 30  # 30 seconds per analysis estimate
             }
-            
+        except HTTPException:
+            raise
+
         except Exception as e:
             self.logger.error(f"Error submitting analysis to queue: {str(e)}")
             raise
@@ -229,7 +314,7 @@ class QueueService:
                     cursor = conn.cursor()
                     cursor.execute(
                         """
-                        SELECT results, confidence, processing_started, processing_completed
+                        SELECT results, processing_started, processing_completed
                         FROM analysis_history WHERE id = ?
                         """,
                         (history_id,)
@@ -238,7 +323,6 @@ class QueueService:
                     if row:
                         status_info.update({
                             "results": row["results"],
-                            "confidence": row["confidence"],
                             "processing_started": row["processing_started"],
                             "processing_completed": row["processing_completed"]
                         })

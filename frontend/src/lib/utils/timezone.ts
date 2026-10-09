@@ -1,5 +1,36 @@
 /** Timezone utilities for frontend display. */
 
+/**
+ * Normalize a UTC timestamp string from the backend.
+ *
+ * SQLite's DEFAULT CURRENT_TIMESTAMP produces bare strings like
+ * "2026-10-07 11:33:07" with no timezone suffix. When passed to
+ * `new Date()`, the browser interprets them as **local time**, causing
+ * displayed times to be offset by the user's UTC offset (e.g. 5h30m wrong
+ * for UTC+5:30 users).
+ *
+ * This helper ensures all backend timestamps are parsed as UTC by:
+ *  1. Replacing the space separator with "T" (ISO 8601 requirement).
+ *  2. Appending "Z" when no explicit timezone offset (+HH:MM / Z) is present.
+ */
+function parseUTCDate(utcString: string): Date {
+  if (!utcString) return new Date(NaN);
+
+  let normalized = utcString.trim();
+
+  // Replace space separator with "T" for ISO 8601 compliance
+  // e.g. "2026-10-07 11:33:07" → "2026-10-07T11:33:07"
+  normalized = normalized.replace(' ', 'T');
+
+  // Append "Z" if no timezone offset is already present
+  // Matches strings that already end with Z, +HH:MM, or -HH:MM
+  if (!/Z|[+-]\d{2}:\d{2}$/.test(normalized)) {
+    normalized += 'Z';
+  }
+
+  return new Date(normalized);
+}
+
 export interface TimezoneInfo {
   utc_time: string;
   local_time: string;
@@ -51,7 +82,7 @@ export function formatTimeForUser(
   userTimezone: string = getUserTimezone()
 ): TimezoneInfo {
   try {
-    const utcDate = new Date(utcString);
+    const utcDate = parseUTCDate(utcString);
     
     if (isNaN(utcDate.getTime())) {
       throw new Error('Invalid UTC date');
@@ -150,7 +181,7 @@ export function getCommonTimezones(): CommonTimezone[] {
  */
 export function formatRelativeTime(utcString: string, userTimezone: string = getUserTimezone()): string {
   try {
-    const utcDate = new Date(utcString);
+    const utcDate = parseUTCDate(utcString);
     const now = new Date();
     const diffMs = now.getTime() - utcDate.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);

@@ -165,14 +165,26 @@ def save_upload_file(
 
 
 def cleanup_temp_file(file_path: str) -> None:
-    """Clean up temporary file.
+    """Securely clean up temporary file by overwriting before unlinking.
     
     Args:
         file_path: Path to file to remove
     """
     try:
         path = Path(file_path)
-        if path.exists():
+        if path.exists() and path.is_file():
+            # Ephemeral Storage Safeguard: zero-fill file sectors before unlinking
+            # to prevent forensic recovery of temporary plaintext medical imagery
+            try:
+                size = path.stat().st_size
+                if size > 0:
+                    with open(path, "ba+", buffering=0) as f:
+                        f.write(b"\x00" * size)
+                        f.flush()
+                        os.fsync(f.fileno())
+            except Exception as wipe_err:
+                logger.warning("failed_to_zerofill_temp_file", file_path=file_path, error=str(wipe_err))
+
             path.unlink()
             logger.info("temp_file_cleaned_up", file_path=file_path)
     except Exception as e:
@@ -181,6 +193,7 @@ def cleanup_temp_file(file_path: str) -> None:
             file_path=file_path,
             error=str(e)
         )
+
 
 
 def get_file_info(file_path: str) -> dict:

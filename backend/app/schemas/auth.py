@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     is_admin: bool
     created_at: datetime
     analyses_count: Optional[int] = 0
+    study_consent_accepted_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -59,7 +60,8 @@ class AnalysisHistory(BaseModel):
     image_base64: Optional[str] = None
     results: dict
     timestamp: datetime
-    confidence: Optional[float] = None
+    consent_confirmed: Optional[bool] = True
+    consent_timestamp: Optional[datetime] = None
 
     class Config:
         from_attributes = True

@@ -1,0 +1,36 @@
+MEDVERI - PRIVACY POLICY (PLAIN TEXT VERSION)
+Effective Date: October 7, 2026
+Contact: admin@medveri.xyz
+
+1. NON-COMMERCIAL RESEARCH PURPOSE & INVESTIGATIONAL TESTBED
+MedVeri is a strictly non-commercial scientific testbed for research evaluation of synthetic medical imagery and algorithmic authenticity benchmarks. THIS PROJECT IS NOT FOR COMMERCIAL USAGE, commercial healthcare billing, or private monetization. It is not an FDA-cleared, CE-marked, or certified medical diagnostic device.
+
+2. MANDATORY PATIENT CONSENT & DE-IDENTIFICATION
+- Clinicians and researchers MUST obtain explicit patient informed consent or institutional IRB authorization before uploading any medical imaging for research purposes.
+- All Protected Health Information (PHI) and Personally Identifiable Information (PII) including patient names, hospital record numbers (MRNs), dates of birth, and embedded DICOM metadata MUST be completely stripped/de-identified prior to upload.
+
+3. DATA COLLECTED
+- User account credentials: username, institutional/professional email, and cryptographically hashed passwords.
+- Uploaded medical scans & metadata: Knee X-rays and CT slices submitted for authenticity evaluation, along with filenames and user-assigned study labels.
+- Analysis outputs: Deep learning inference scores, confidence metrics, and Grad-CAM explanation heatmaps.
+- System operational logs: Request timestamps, queue IDs, error traces, and security-related logs.
+- Consent records: When a user accepts the Privacy Policy and Terms and Conditions during first time login, and when a user provides consent before submitting an image for analysis, we record the consent timestamp, applicable policy/terms version, IP address, and user-agent. These records are collected only to evidence consent, maintain legal/compliance records, and resolve disputes.
+
+4. HOW DATA IS ENCRYPTED & STORED (PHI PROTECTION)
+- Encryption at Rest: Stored medical scans, Grad-CAM outputs, and study metadata (filenames, custom analysis labels) are encrypted using authenticated AES-256-GCM.
+- Zero-Knowledge Key Management: Decryption keys are derived directly from user credentials via Argon2id and exist ONLY in volatile server memory during active sessions. Keys are not intentionally stored on persistent disk, in the database, or in application logs.
+- Ephemeral Processing: Temporary files created during model inference are securely deleted after processing using the safeguards implemented by the platform and hosting environment.
+- Encryption in Transit: All communications between client applications and our servers are encrypted via TLS/HTTPS.
+- EU Hosting: The application infrastructure is hosted on servers located in the European Union. Accordingly, data submitted by users may be processed and stored on infrastructure located in the European Union. Hosting/infrastructure providers may have access only to data that is available to them in unencrypted form as necessary to provide and secure the hosting infrastructure. Patient medical images and protected study metadata, including filenames and user-assigned identifiers or study labels, are stored in encrypted form and are not made available to hosting/infrastructure providers in decrypted form. Decryption keys are derived from user credentials and are not provided to hosting/infrastructure providers.
+
+5. SECURITY ALLOCATION & PASSWORD DISCLAIMER
+- Our database uses strong cryptographic encryption at rest. Stored medical images and protected study metadata are designed to remain inaccessible without the user's password-derived decryption key. 
+- We disclaim all liability if your account, password, session token, or data is compromised due to weak passwords, credential reuse, phishing, malware on your device, or unauthorized sharing of your credentials. You are solely responsible for keeping your password secure.
+
+6. DATA DELETION RIGHTS (SELF-SERVICE & IMMEDIATE)
+- Item Deletion: Users can delete individual past analyses anytime through their History dashboard. This permanently purges the corresponding database record and encrypted image data from active storage.
+- Account Erasure: Users have self-service account deletion in Profile settings (Danger Zone). Account deletion removes account credentials, encrypted medical scans, analysis data, and associated encryption keys from active systems. Administrators may also delete accounts upon request.
+- Users may request access to information about their personal-data processing, correction or updating, erasure where applicable, withdrawal of consent where processing is based on consent, and grievance redressal by contacting us at the address above. Withdrawal of consent does not affect processing already lawfully carried out before withdrawal, and may prevent continued use of features that require that consent.
+
+7. NO THIRD-PARTY SALE & NO COMMERCIAL EXPLOITATION
+We do not sell, rent, monetize, or disclose user data, uploaded medical images, or consent metadata to advertisers or other third parties for their independent commercial purposes. Data may be processed by infrastructure or service providers acting solely on our behalf where necessary to host, operate, secure, or maintain the platform. Such providers are not authorized by us to use the data for their own independent purposes.
