@@ -12,6 +12,7 @@
     "format": "prettier --plugin-search-dir . --write ."
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@sveltejs/adapter-static": "^2.0.3",
     "@sveltejs/kit": "^1.27.4",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
@@ -31,6 +32,8 @@
     "vite": "^4.4.2"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
     "bits-ui": "^0.21.0",
     "clsx": "^2.0.0",
     "lucide-svelte": "^0.294.0",

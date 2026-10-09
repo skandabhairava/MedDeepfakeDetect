@@ -13,6 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.api import analyze_router, health_router, auth_router
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Configure logging
@@ -133,6 +134,22 @@ def create_application() -> FastAPI:
 
 # Create application instance
 app = create_application()
+
+allowed_origins = [
+    "https://medveri.xyz",   # Production website
+    "http://localhost",     # Capacitor Android default
+    "https://localhost",    # Possible alternative WebView origin
+    "capacitor://localhost", # Capacitor iOS default
+    "ionic://localhost",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
 if __name__ == "__main__":
