@@ -1,3 +1,5 @@
+import { openStudyConsentModal } from '$lib/stores/consent';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 class ApiError extends Error {
@@ -59,6 +61,7 @@ async function apiRequest<T>(
 	const data = await response.json().catch(() => null);
 	
 	if (!response.ok) {
+		const errorCode = data?.detail?.error_code ?? data?.error_code;
 		// ----------------------------------------------------------------
 		// Forced logout cases
 		// ----------------------------------------------------------------
@@ -84,6 +87,10 @@ async function apiRequest<T>(
 					401,
 					data
 				);
+			}
+		} else if (response.status === 403) {	
+			if (errorCode === 'consent_required') {
+				openStudyConsentModal();
 			}
 		}
 
@@ -138,11 +145,11 @@ export const api = {
 		const data = await response.json().catch(() => null);
 		
 		if (!response.ok) {
+			const errorCode = data?.detail?.error_code ?? data?.error_code;
 			if (response.status === 401) {
 				// ----------------------------------------------------------------
 				// Forced logout cases
 				// ----------------------------------------------------------------
-				const errorCode = data?.detail?.error_code ?? data?.error_code;
 
 				if (errorCode === 'encryption_key_expired') {
 					// Session key evicted from server memory — re-login required
@@ -162,6 +169,10 @@ export const api = {
 						401,
 						data
 					);
+				}
+			} else if (response.status === 403) {	
+				if (errorCode === 'consent_required') {
+					openStudyConsentModal();
 				}
 			}
 

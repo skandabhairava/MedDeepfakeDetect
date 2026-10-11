@@ -6,16 +6,16 @@
 <div class="min-h-screen bg-gradient-to-br from-primary-50 to-white flex items-center justify-center px-4 py-8">
 	<div class="max-w-6xl w-full">
 		<div class="text-center mb-10">
-			<div class="flex justify-center items-center space-x-3 mb-4 mt-2">
+			<div class="flex flex-col md:flex-row justify-center items-center space-y-3 md:space-y-0 md:space-x-3 mb-4 mt-2">
 				<div class="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center animate-pulse-slow">
 					<Brain class="w-10 h-10 text-white" />
 				</div>
-				<h1 class="text-4xl md:text-5xl font-bold text-gray-900">MedVeri Research Testbed</h1>
+				<h1 class="text-4xl md:text-5xl font-bold text-gray-900">MedVeri</h1>
 			</div>
 
 			<!-- Mandatory landing screen statement -->
 			<div class="max-w-3xl mx-auto mb-6 p-4 bg-amber-50 border-2 border-amber-300 rounded-xl shadow-sm text-amber-950 text-sm md:text-base font-semibold leading-relaxed">
-				MedVeri Research Testbed — Restricted Access. This app is part of an ongoing scientific investigation. Access is restricted to pre-authorized study investigators.
+				Research Testbed — Restricted Access. This app is part of an ongoing scientific investigation. Access is restricted to pre-authorized study investigators.
 			</div>
 
 			<p class="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">

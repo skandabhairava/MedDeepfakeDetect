@@ -8,19 +8,18 @@
 	import Navigation from '$lib/components/Navigation.svelte';
 	import ToastContainer from '$lib/components/ToastContainer.svelte';
 	import { ShieldAlert } from 'lucide-svelte';
+	import { showStudyConsentModal, openStudyConsentModal, closeStudyConsentModal } from '$lib/stores/consent';
 
 	let authChecked = false;
-	let showStudyConsentModal = false;
 	let isAcceptingConsent = false;
 	let consentCheckboxChecked = false;
+
+	const publicRoutes = ['/', '/login/', '/privacy/', '/terms/'];
+	const currentPath = $page.url.pathname;
 
 	onMount(async () => {
 		await checkAuth();
 		authChecked = true;
-		
-		// Check if user is trying to access protected routes
-		const publicRoutes = ['/', '/login/', '/privacy/', '/terms/'];
-		const currentPath = $page.url.pathname;
 		
 		if (!publicRoutes.includes(currentPath) && !$isAuthenticated) {
 			goto('/login');
@@ -28,15 +27,15 @@
 
 		// Show first-login modal if authenticated but study consent not yet recorded
 		if ($isAuthenticated && $user && !$user.study_consent_accepted_at) {
-			showStudyConsentModal = true;
+			if (!publicRoutes.includes(currentPath)) { // dont show consent modal if you're on public routes
+				// showStudyConsentModal = true;
+				openStudyConsentModal();
+			}
 		}
 	});
 
 	// Watch for route changes
 	$: if (authChecked && !$isAuthenticated) {
-		const publicRoutes = ['/', '/login/', '/privacy/', '/terms/'];
-		const currentPath = $page.url.pathname;
-		
 		if (!publicRoutes.includes(currentPath)) {
 			goto('/login');
 		}
@@ -44,7 +43,9 @@
 
 	// Show modal whenever a logged-in user hasn't accepted yet
 	$: if (authChecked && $isAuthenticated && $user && !$user.study_consent_accepted_at) {
-		showStudyConsentModal = true;
+		if (!publicRoutes.includes(currentPath)) { // dont show consent modal if you're on public routes
+			openStudyConsentModal();
+		}
 	}
 
 	async function handleAcceptConsent() {
@@ -53,20 +54,21 @@
 		const ok = await acceptStudyConsent();
 		isAcceptingConsent = false;
 		if (ok) {
-			showStudyConsentModal = false;
+			// showStudyConsentModal = false;
+			closeStudyConsentModal();
+			console.log("closing consent modal", $showStudyConsentModal);
 		}
 	}
 </script>
 
-<!-- Mandatory statutory banner — present on every screen -->
-<div class="w-full bg-amber-600 text-white text-center py-1.5 px-4 text-xs font-semibold tracking-wide z-50 sticky top-0 shadow-sm">
-	For Research and Investigational Use Only. Not for Use in Diagnostic Procedures.
-</div>
+<svelte:head>
+	<title>MedVeri</title>
+</svelte:head>
 
 <Navigation />
 
 <!-- First-Login Study Consent Modal — unavoidable; no dismiss/close/escape -->
-{#if showStudyConsentModal}
+{#if $showStudyConsentModal}
 	<div class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
 		<div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
 			<!-- Header -->
@@ -82,25 +84,36 @@
 			<div class="px-6 py-5 space-y-4 text-sm text-gray-800">
 				<div class="p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-xs font-semibold leading-relaxed">
 					MedVeri Research Testbed — Restricted Access.<br />
-					This app is part of an ongoing scientific investigation. Access is restricted to pre-authorized study investigators.
+					This platform is strictly an experimental research testbed. Access is restricted exclusively to pre-authorized study investigators and scientific collaborators.
 				</div>
 
 				<div class="space-y-3 leading-relaxed">
-					<p><strong>Study Title:</strong> Medical Deepfake Detection Research Study — Investigational Prototype Evaluation</p>
+					<p><strong>Study & Project Title:</strong> Medical Deepfake Detection Research Study — Investigational Prototype Evaluation</p>
 
-					<p><strong>IRB / Ethics Notice:</strong> This software is an investigational research prototype. It has <strong>not</strong> been cleared or approved by the FDA, CE, or any regulatory authority as a medical device or Software as a Medical Device (SaMD).</p>
+                    <p><strong>Strictly Non-Commercial:</strong> This project is strictly for non-commercial academic research. Commercial use, clinical practice, fee-for-service patient billing, software resale, or software embedding is strictly prohibited.</p>
 
-					<p><strong>Investigational Nature:</strong> All outputs — including deepfake authenticity signals, arthritis severity index scores, and GradCAM visualizations — are <strong>experimental model benchmarks for research evaluation only</strong>. They do <strong>not</strong> constitute medical diagnoses, clinical assessments, or treatment recommendations.</p>
+                    <p><strong>Not a Diagnostic Medical Device:</strong> MedVeri is <strong>NOT</strong> cleared or approved by the FDA, CE, or any health authority as Software as a Medical Device (SaMD). Do <strong>NOT</strong> use this system for clinical diagnosis, intervention, or patient treatment.</p>
 
-					<p><strong>No Diagnostic Use:</strong> You agree that you will <strong>not</strong> use any output of this system as a primary or secondary basis for any clinical decision, patient management action, or treatment recommendation.</p>
+                    <p><strong>Investigational Model Limitations:</strong> Neural network predictions, authenticity probabilities, severity scores, and Grad-CAM heatmaps are experimental benchmark outputs subject to model error, biases, false positives, and false negatives. Outputs <strong>must never replace human clinical expertise</strong>, and imaging must always be verified by certified specialists.</p>
 
-					<p><strong>De-Identification Obligation:</strong> All medical images submitted must be completely de-identified (HIPAA Safe Harbor / GDPR pseudonymisation). You accept personal legal responsibility for ensuring no Protected Health Information (PHI) is uploaded.</p>
+                    <p><strong>No Doctor-Patient Relationship:</strong> Usage of this platform creates no doctor-patient, radiologist-patient, fiduciary, or healthcare provider relationship between you (or your patients) and platform developers or contributors.</p>
 
-					<p><strong>Data Handling:</strong> Images and metadata are encrypted at rest using AES-256-GCM. No PHI will be shared with third parties.</p>
+                    <p><strong>Mandatory De-Identification (HIPAA / GDPR):</strong> All uploaded medical scans must be completely scrubbed of Protected Health Information (PHI) and Personally Identifiable Information (PII). You accept personal legal responsibility for ensuring complete de-identification.</p>
+
+                    <p><strong>Security, Encryption & User Password Liability:</strong> Scans and metadata are encrypted at rest with keys derived from user passwords. You bear sole responsibility for securing your login credentials and personal devices.</p>
+
+                    <p><strong>Account Deletion Rights:</strong> Users retain full rights to self-service account termination and data erasure via Profile settings at any time.</p>
 
 					<p><strong>Confidentiality:</strong> This platform and its outputs are confidential research materials. Do not share results outside the authorized study team.</p>
 
 					<p><strong>Consent Timestamp:</strong> By clicking "I Accept", your acceptance is recorded server-side with a UTC timestamp as part of the study audit trail.</p>
+
+					<p class="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700">
+                        📄 <strong>Full Legal Terms:</strong> By proceeding, you agree to these key points and our complete legal policies. Please review the full document at 
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700 underline font-semibold">Terms of Service & Research Disclaimer (/terms)</a>.
+						<a href="/privacy" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700 underline font-semibold">Privacy Policy (/privacy)</a>.
+                    </p>
+
 				</div>
 
 				<!-- Mandatory checkbox -->
@@ -112,7 +125,7 @@
 						class="mt-0.5 w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 cursor-pointer flex-shrink-0"
 					/>
 					<label for="study-consent-cb" class="text-xs text-gray-800 leading-relaxed cursor-pointer select-none">
-						<strong>I confirm</strong> that I am a pre-authorized study investigator, that I have read and understood this agreement, that I will use this platform solely for the approved research purpose, and that I will ensure all uploaded images are fully de-identified. I understand that outputs are investigational benchmarks and <strong>must not</strong> be used for clinical diagnosis.
+						<strong>I confirm</strong> that I am a pre-authorized study investigator, that I have read and agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline font-medium">Terms of Service</a> and the <a href="/privacy" target="_blank" rel="noopener noreferrer" class="text-primary-600 underline font-medium">Privacy Policy</a>, that I will use this platform solely for the approved non-commercial research purpose, that all uploaded images are fully de-identified, and that outputs <strong>will not be used for clinical diagnosis or patient care</strong>.
 					</label>
 				</div>
 
@@ -135,7 +148,7 @@
 							<span>Recording agreement...</span>
 						</span>
 					{:else}
-						I Accept — Proceed to Research Platform
+						I Accept - Proceed to Research Platform
 					{/if}
 				</button>
 				{#if !consentCheckboxChecked}

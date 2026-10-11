@@ -49,7 +49,10 @@ def get_current_consented_user(current_user: dict = Depends(get_current_user)) -
     if not current_user.get("study_consent_accepted_at"):
         raise HTTPException(
             status_code=403,
-            detail="Study Agreement Required: You must review and accept the mandatory Study Agreement and de-identification warranty before accessing analysis features."
+            detail={
+                "message": "Study Agreement Required: You must review and accept the mandatory Study Agreement and de-identification warranty before accessing platform features.",
+                "error_code": "consent_required"
+            },
         )
     return current_user
 

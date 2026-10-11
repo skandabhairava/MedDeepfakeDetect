@@ -1,36 +1,52 @@
 MEDVERI - PRIVACY POLICY (PLAIN TEXT VERSION)
-Effective Date: October 7, 2026
+Effective Date: October 11, 2026
 Contact: admin@medveri.xyz
 
-1. NON-COMMERCIAL RESEARCH PURPOSE & INVESTIGATIONAL TESTBED
-MedVeri is a strictly non-commercial scientific testbed for research evaluation of synthetic medical imagery and algorithmic authenticity benchmarks. THIS PROJECT IS NOT FOR COMMERCIAL USAGE, commercial healthcare billing, or private monetization. It is not an FDA-cleared, CE-marked, or certified medical diagnostic device.
+MedVeri is a strictly non-commercial scientific testbed for research evaluation of synthetic medical imagery and algorithmic authenticity benchmarks. This project is NOT for commercial usage, commercial healthcare billing, private patient fees, software resale, software embedding, or monetization. It is not an FDA-cleared, CE-marked, or certified medical diagnostic device.
+
+1. SCOPE & NON-COMMERCIAL RESEARCH PURPOSE
+This Privacy Policy governs the collection, processing, storage, protection, and deletion of information submitted to the MedVeri platform ("Platform", "we", "us", or "our"). The Platform operates exclusively as a non-commercial scientific testbed for algorithmic experimentation and academic investigation.
+
+This policy applies to pre-authorized study investigators, healthcare providers, clinical researchers, and institutional participants ("Investigator", "User", or "you") accessing this evaluation workbench.
 
 2. MANDATORY PATIENT CONSENT & DE-IDENTIFICATION
-- Clinicians and researchers MUST obtain explicit patient informed consent or institutional IRB authorization before uploading any medical imaging for research purposes.
-- All Protected Health Information (PHI) and Personally Identifiable Information (PII) including patient names, hospital record numbers (MRNs), dates of birth, and embedded DICOM metadata MUST be completely stripped/de-identified prior to upload.
+User Obligations
+Clinicians, researchers, and users submitting imaging data must adhere strictly to applicable patient privacy regulations (including HIPAA, GDPR, and institutional ethical standards):
+- Explicit Informed Consent: You represent and warrant that you have obtained all necessary, documented patient informed consents, authorizations, or Institutional Review Board (IRB) ethical clearances to upload imaging data for research and integrity evaluation.
+- Mandatory De-Identification: You must strip, scrub, and de-identify all Protected Health Information (PHI) and Personally Identifiable Information (PII)-including patient names, hospital record numbers (MRNs), social IDs, dates of birth, legible clinical tags, and embedded DICOM patient metadata—prior to transmission. You accept sole personal legal responsibility for ensuring no PHI/PII is uploaded.
 
-3. DATA COLLECTED
-- User account credentials: username, institutional/professional email, and cryptographically hashed passwords.
-- Uploaded medical scans & metadata: Knee X-rays and CT slices submitted for authenticity evaluation, along with filenames and user-assigned study labels.
-- Analysis outputs: Deep learning inference scores, confidence metrics, and Grad-CAM explanation heatmaps.
-- System operational logs: Request timestamps, queue IDs, error traces, and security-related logs.
-- Consent records: When a user accepts the Privacy Policy and Terms and Conditions during first time login, and when a user provides consent before submitting an image for analysis, we record the consent timestamp, applicable policy/terms version, IP address, and user-agent. These records are collected only to evidence consent, maintain legal/compliance records, and resolve disputes.
+3. INFORMATION WE COLLECT
+We collect only the minimum data necessary to operate, secure, and validate the platform:
+- Account Credentials: Username, registered institutional/professional email address, account creation timestamp, and cryptographically hashed passwords.
+- Uploaded Medical Scans & Metadata: Knee X-rays and CT slices submitted for tamper and integrity analysis, alongside user-assigned study labels or filenames.
+- Analysis Outputs: Machine learning inference outputs, classification probabilities/scores, confidence metrics, severity scores, and Grad-CAM visual explanation heatmaps generated during analysis.
+- Operational Logs: Request timestamps, queue processing IDs, processing queue statuses, security logs, and diagnostic error traces used solely for system throughput, platform stability, and security monitoring.
+- Consent & Legal Audit Records: When you accept the Privacy Policy and Terms of Service during registration/login, or provide consent prior to submitting an image for analysis, we record the consent timestamp, IP address, and user-agent. These records are collected solely to evidence legal consent, maintain compliance audit trails, and resolve potential legal disputes.
 
-4. HOW DATA IS ENCRYPTED & STORED (PHI PROTECTION)
-- Encryption at Rest: Stored medical scans, Grad-CAM outputs, and study metadata (filenames, custom analysis labels) are encrypted using authenticated AES-256-GCM.
-- Zero-Knowledge Key Management: Decryption keys are derived directly from user credentials via Argon2id and exist ONLY in volatile server memory during active sessions. Keys are not intentionally stored on persistent disk, in the database, or in application logs.
-- Ephemeral Processing: Temporary files created during model inference are securely deleted after processing using the safeguards implemented by the platform and hosting environment.
-- Encryption in Transit: All communications between client applications and our servers are encrypted via TLS/HTTPS.
-- EU Hosting: The application infrastructure is hosted on servers located in the European Union. Accordingly, data submitted by users may be processed and stored on infrastructure located in the European Union. Hosting/infrastructure providers may have access only to data that is available to them in unencrypted form as necessary to provide and secure the hosting infrastructure. Patient medical images and protected study metadata, including filenames and user-assigned identifiers or study labels, are stored in encrypted form and are not made available to hosting/infrastructure providers in decrypted form. Decryption keys are derived from user credentials and are not provided to hosting/infrastructure providers.
+4. HOW DATA IS ENCRYPTED, HANDLED & PROTECTED
+We enforce strict cryptographic safeguards so that stored medical data remains completely inaccessible to third parties, hosting infrastructure providers, and platform administrators:
+- Encryption at Rest: All stored medical scans, Grad-CAM heatmaps, and protected study metadata (including upload filenames, study labels) are encrypted using authenticated industry-standard encryption. Decryption keys are derived directly from user login credentials. Neither we nor our hosting providers can view or decrypt your uploaded medical data or study metadata, as static master decryption keys and plaintext records are never stored on disk or in the database.
+- Encryption in Transit: All communications and data transmitted between client applications/browsers and our backend endpoints are encrypted in transit using Transport Layer Security (TLS/HTTPS).
+- European Union (EU) Infrastructure & Hosting: Application infrastructure and databases are hosted on servers located within the European Union (EU). Infrastructure providers act solely on our behalf to host and maintain system uptime. Stored patient imaging and study metadata are encrypted and are not accessible in decrypted form to hosting providers or platform administrators.
 
-5. SECURITY ALLOCATION & PASSWORD DISCLAIMER
-- Our database uses strong cryptographic encryption at rest. Stored medical images and protected study metadata are designed to remain inaccessible without the user's password-derived decryption key. 
-- We disclaim all liability if your account, password, session token, or data is compromised due to weak passwords, credential reuse, phishing, malware on your device, or unauthorized sharing of your credentials. You are solely responsible for keeping your password secure.
+5. EMAIL COMMUNICATIONS & MARKETING POLICY
+- No Marketing or Mailing Lists: We do NOT maintain general marketing mailing lists, send promotional newsletters, or share email addresses with third-party advertisers.
+- Mandatory Legal & System Notices: We will ONLY use your registered email address to deliver legally required notifications (such as material updates to our Terms of Service or Privacy Policy) or critical security/account alerts.
 
-6. DATA DELETION RIGHTS (SELF-SERVICE & IMMEDIATE)
-- Item Deletion: Users can delete individual past analyses anytime through their History dashboard. This permanently purges the corresponding database record and encrypted image data from active storage.
-- Account Erasure: Users have self-service account deletion in Profile settings (Danger Zone). Account deletion removes account credentials, encrypted medical scans, analysis data, and associated encryption keys from active systems. Administrators may also delete accounts upon request.
-- Users may request access to information about their personal-data processing, correction or updating, erasure where applicable, withdrawal of consent where processing is based on consent, and grievance redressal by contacting us at the address above. Withdrawal of consent does not affect processing already lawfully carried out before withdrawal, and may prevent continued use of features that require that consent.
+6. ALLOCATION OF SECURITY LIABILITY & PASSWORD DISCLAIMER
+As cryptographic access to stored image records relies on keys derived from your secret password, the confidentiality of your data fundamentally depends on you safeguarding your credentials:
+- Database Security & Leak Resilience: In the event of an external database breach or unauthorized database leak, stored image data and study metadata remain encrypted and unreadable without your password-derived decryption key.
+- User Liability for Credential Compromise: We explicitly disclaim all liability if your account, password, session token, or data is accessed as a result of weak passwords, credential reuse, phishing, malware on your personal device, or unauthorized sharing of your credentials. You bear sole responsibility for maintaining credential confidentiality.
 
-7. NO THIRD-PARTY SALE & NO COMMERCIAL EXPLOITATION
-We do not sell, rent, monetize, or disclose user data, uploaded medical images, or consent metadata to advertisers or other third parties for their independent commercial purposes. Data may be processed by infrastructure or service providers acting solely on our behalf where necessary to host, operate, secure, or maintain the platform. Such providers are not authorized by us to use the data for their own independent purposes.
+7. DATA RETENTION, SELF-SERVICE DELETION & ADMINISTRATIVE ERASURE
+In accordance with global privacy frameworks (including GDPR, HIPAA, and app store developer standards), users maintain complete self-service control over their data:
+- Item Deletion: You may permanently delete individual past analysis entries at any time via your History dashboard. This immediately purges the corresponding database record and ciphertext from active servers.
+- Complete Account & Data Erasure: You may permanently delete your account and all associated encrypted medical records, analysis data, and encryption keys at any time directly through your Profile settings (Delete Account / Danger Zone). Platform administrators also retain authority to erase accounts upon request or during study decommissioning. Deletion from active systems is immediate and irreversible.
+- Limited Retention Exclusions: Limited consent timestamps, security logs, or legal-compliance audit trails may be retained only where reasonably necessary or required by applicable law, and backup copies expire through the ordinary automated backup-retention cycle.
+- User Rights & Consent Withdrawal: Users may request information regarding their data processing, correction, or data erasure, and may withdraw consent at any time by contacting us. Withdrawal of consent does not affect processing lawfully conducted prior to withdrawal, but may prevent continued use of features requiring that consent.
+
+8. NO THIRD-PARTY SALE OR COMMERCIAL EXPLOITATION
+We do not sell, rent, license, monetize, trade, or disclose user data, uploaded medical images, or consent metadata to advertisers, commercial aggregators, or third parties for their independent commercial purposes. Data is processed exclusively by infrastructure service providers acting strictly on our behalf under confidentiality obligations to host, secure, and maintain the platform.
+
+9. CONTACT INFORMATION & GRIEVANCES
+If you have questions, privacy grievances, or requests regarding this Privacy Policy, your rights, or data security practices, please contact our administrative team at: admin@medveri.xyz

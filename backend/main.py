@@ -3,7 +3,8 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -26,6 +27,13 @@ limiter = Limiter(key_func=get_remote_address)
 # Global instances
 model_service = None
 queue_service = None
+
+NO_CACHE_PAGES = [
+    "/privacy",
+    "/terms",
+    "/privacy.txt",
+    "/toc.txt",
+]
 
 
 @asynccontextmanager
@@ -64,6 +72,28 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Error stopping queue service: {str(e)}")
 
+class HTMLCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Only cache successful HTML GET responses
+        if (
+            request.method == "GET"
+            and response.status_code == 200
+            and response.headers.get("content-type", "").startswith("text/html")
+        ):
+            path = request.url.path.rstrip("/") or "/"
+
+            if path in NO_CACHE_PAGES:
+                response.headers["Cache-Control"] = (
+                    "no-store"
+                )
+            else:
+                response.headers["Cache-Control"] = (
+                    "public, max-age=18000" # 5hrs = 5*60*60
+                )
+
+        return response
 
 def create_application() -> FastAPI:
     """Create and configure FastAPI application."""
@@ -95,7 +125,7 @@ def create_application() -> FastAPI:
     async def api_root():
         """API root endpoint."""
         return {
-            "message": "Medical Deepfake Backend API",
+            "message": "MedVeri API",
             "version": settings.app_version,
             "health": "/health"
         }
@@ -107,11 +137,14 @@ def create_application() -> FastAPI:
         ".webmanifest"
     )
     
+    app.add_middleware(HTMLCacheMiddleware) # frontend caching
+    
     # Serve static files (frontend build)
     frontend_build_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "build")
     if os.path.exists(frontend_build_path):
         # Serve entire build from root with SPA fallback
         app.mount("/", StaticFiles(directory=frontend_build_path, html=True), name="static")
+
     
     # Global exception handler
     @app.exception_handler(Exception)

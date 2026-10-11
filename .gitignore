@@ -6,5 +6,7 @@ build/
 medical_deepfake.db
 *.pth
 backend/Archive.zip
+backend/uploads/*
+!backend/uploads/.gitkeep
 frontend/android
 frontend/ios

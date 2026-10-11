@@ -191,7 +191,10 @@ class QueueService:
                 )
                 raise HTTPException(
                     status_code=403,
-                    detail="Study Agreement Required: You must review and accept the mandatory Study Agreement and de-identification warranty before submitting analyses."
+                    detail={
+                        "message": "Study Agreement Required: You must review and accept the mandatory Study Agreement and de-identification warranty before accessing platform features.",
+                        "error_code": "consent_required"
+                    }
                 )
 
             # Fetch the user's AES key from the session cache
